@@ -19,5 +19,10 @@ urlpatterns = [
         "alertas/<int:alerta_id>/detalle/",
         views.detalle_alerta,
         name="por_alerta"
+    ),
+    path(
+        "dispositivos/",
+        views.catalogo,
+        name="catalogo"
     )
 ]
