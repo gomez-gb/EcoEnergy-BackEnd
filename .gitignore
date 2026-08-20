@@ -1,0 +1,88 @@
+# ============================================================
+# .gitignore — Proyecto Python + Django (EcoEnergy-BackEnd)
+# ============================================================
+
+# ---------------------------------------------------------
+# Entorno virtual
+# ---------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+
+# ---------------------------------------------------------
+# Bytecode y caché de Python
+# ---------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# ---------------------------------------------------------
+# Django específico
+# ---------------------------------------------------------
+db.sqlite3
+db.sqlite3-journal
+*.log
+local_settings.py
+/media/
+/staticfiles/
+celerybeat-schedule
+celerybeat.pid
+
+# NOTA: la carpeta migrations/ de cada app SÍ debe versionarse.
+# No se ignora aquí a propósito: las migraciones son parte del
+# historial del esquema de base de datos y deben compartirse
+# entre el equipo y los entornos (dev/staging/prod).
+
+# ---------------------------------------------------------
+# Variables de entorno y secretos
+# ---------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# ---------------------------------------------------------
+# Distribución y empaquetado
+# ---------------------------------------------------------
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# ---------------------------------------------------------
+# Testing y cobertura
+# ---------------------------------------------------------
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+nosetests.xml
+coverage.xml
+
+# ---------------------------------------------------------
+# Editores / IDEs
+# ---------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---------------------------------------------------------
+# Sistema operativo
+# ---------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------------------------------------------------------
+# Otros
+# ---------------------------------------------------------
+*.bak
+*.tmp
+
+# Tooling frontend (solo relevante si el proyecto llega a
+# incluir un frontend con Node.js/npm)
+node_modules/
