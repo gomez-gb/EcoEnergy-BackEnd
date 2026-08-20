@@ -1,0 +1,23 @@
+from django.urls import path
+from . import views
+
+app_name = "dispositivos"
+
+urlpatterns = [
+    path("", views.inicio, name="inicio"),
+    path(
+        "zonas/<int:zona_id>/dispositivos/",
+        views.dispositivos_zona,
+        name="por_zona",
+    ),
+    path(
+        "medidores/<int:medidor_id>/lectura/",
+        views.lectura_medidor,
+        name="por_medidor",
+    ),
+    path(
+        "alertas/<int:alerta_id>/detalle/",
+        views.detalle_alerta,
+        name="por_alerta"
+    )
+]
