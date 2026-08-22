@@ -11,11 +11,6 @@ urlpatterns = [
         name="por_zona",
     ),
     path(
-        "medidores/<int:medidor_id>/lectura/",
-        views.lectura_medidor,
-        name="por_medidor",
-    ),
-    path(
         "alertas/<int:alerta_id>/detalle/",
         views.detalle_alerta,
         name="por_alerta"
@@ -24,5 +19,15 @@ urlpatterns = [
         "dispositivos/",
         views.catalogo,
         name="catalogo"
+    ),
+    path(
+        "medidores/",
+        views.lectura_medidor,
+        name="medidores"
+    ),
+    path(
+        "paneles/",
+        views.paneles_solares,
+        name="paneles"
     )
 ]

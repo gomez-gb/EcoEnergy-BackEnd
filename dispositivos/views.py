@@ -25,15 +25,6 @@ def dispositivos_zona(request, zona_id):
         f"Dispositivos de la zona {zona_id}"
     )
 
-def lectura_medidor(request, medidor_id):
-    if medidor_id != 6:
-        return HttpResponse(
-            "Medidor no encontrado", status = 404
-        )
-    return HttpResponse(
-        f"Lectura del medidor {medidor_id}: 42 kwh"
-    )
-
 def detalle_alerta(request, alerta_id):
     if alerta_id != 9:
         return HttpResponse(
@@ -53,4 +44,27 @@ def catalogo(request):
         request,
         "dispositivos/catalogo.html",
         {"dispositivos": dispositivos},
+    )
+
+def lectura_medidor(request):
+    medidores = [
+        {"nombre": "Medidor de voltaje", "estado": "Rango dentro de lo normal: 42 kwh"},
+        {"nombre": "Medidor de temperatura", "estado": "Rango por encima del normal: 100ºC"},
+    ]
+    return render(
+        request,
+        "dispositivos/medidores.html",
+        {"medidores": medidores},
+    )
+
+def paneles_solares(request):
+    paneles = [
+        {"zona": "Planta solar Norte", "capacidad": "45kw", "estado": "Operativo"},
+        {"zona": "Planta solar Norte", "capacidad": "45kw", "estado": "Defectuoso"},
+        {"zona": "Planta solar Sur", "capacidad": "45kw", "estado": "Mantenimiento programado"},
+    ]
+    return render(
+        request,
+        "dispositivos/paneles.html",
+        {"paneles": paneles}
     )

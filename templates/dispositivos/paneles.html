@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Paneles | EcoEnergy{% endblock %}
+
+{% block content %}
+    <h1>Paneles</h1>
+    <ul>
+        {% for panel in paneles %}
+            <li>{{ panel.zona }} — {{panel.capacidad}} - {{ panel.estado }}</li>
+        {% empty %}
+            <li>No existen paneles disponibles.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}
