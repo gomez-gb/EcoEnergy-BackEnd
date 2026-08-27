@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Zona{% endblock %}
+
+{% block content %}
+  <a href="{% url 'dispositivos:listado_zonas' %}">&larr; Volver al listado</a>
+
+  <h1>Detalle de Zona: {{ zona.nombre }}</h1>
+
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="card-subtitle text-muted">Límite</h6>
+          <p class="card-text">{{ zona.limite_kwh }} kWh</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="card-subtitle text-muted">Consumo total</h6>
+          <p class="card-text">{{ consumo_total }} kWh</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="card-subtitle text-muted">Dispositivos</h6>
+          <p class="card-text">{{ cantidad_dispositivos }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="card-subtitle text-muted">Estado</h6>
+          {% if estado == "ALERTA" %}
+            <span class="badge bg-danger">⚠ ALERTA</span>
+          {% else %}
+            <span class="badge bg-success">✓ NORMAL</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Dispositivo</th>
+          <th>Categoría</th>
+          <th>Consumo kWh</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dispositivo in dispositivos %}
+          <tr>
+            <td>{{ dispositivo.nombre }}</td>
+            <td>{{ dispositivo.categoria }}</td>
+            <td>{{ dispositivo.consumo_kwh }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="3">Esta zona no tiene dispositivos.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
