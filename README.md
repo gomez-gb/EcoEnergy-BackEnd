@@ -2,9 +2,9 @@
 
 ## Descripción y objetivo
 
-Backend del proyecto **EcoEnergy**, desarrollado con **Python y Django**. El objetivo previsto del sistema es la gestión de zonas y dispositivos energéticos.
+Backend del proyecto **EcoEnergy**, desarrollado con **Python y Django**. El sistema permite listar zonas de consumo energético y consultar el detalle de cada una: sus dispositivos, la categoría de cada dispositivo, el consumo total de la zona y su estado (`NORMAL` o `ALERTA`) según el límite definido para esa zona.
 
-> **Estado real del código:** el proyecto ya cuenta con la app `dispositivos`, con vistas basadas en `render()` y Templates (con herencia de `base.html` y paso de contexto). Todavía no existen modelos de base de datos: los datos que muestran las plantillas son listas y diccionarios definidos directamente en `dispositivos/views.py`. Ver la sección [Templates, herencia y contexto](#templates-herencia-y-contexto) y [Estado actual y próximos pasos](#estado-actual-y-próximos-pasos).
+> **Estado real del código:** no hay Models, migraciones, ORM, CRUD ni formularios. Los datos viven en tres archivos JSON dentro de `data/` (`zonas.json`, `categorias.json`, `dispositivos.json`) y las relaciones entre ellos se resuelven a mano por `id`, en Python puro, dentro de `dispositivos/services.py`. Las vistas de `dispositivos/views.py` cargan esos JSON en cada request, calculan el consumo total y el estado de cada zona, y pasan el resultado ya calculado a los templates — ningún número está escrito directamente en el HTML. Ver la sección [Estructura de datos y relaciones](#estructura-de-datos-y-relaciones) y [Rutas disponibles](#rutas-disponibles).
 
 ## Requisitos previos
 
@@ -59,11 +59,18 @@ pip install -r requirements.txt
 
 Dependencias actuales del proyecto ([requirements.txt](requirements.txt)):
 
-| Paquete  | Versión |
-|----------|---------|
-| Django   | 6.1     |
-| asgiref  | 3.12.1  |
-| sqlparse | 0.6.0   |
+| Paquete          | Versión | Motivo |
+|------------------|---------|--------|
+| Django           | 6.1     | Framework base del proyecto |
+| asgiref          | 3.12.1  | Dependencia interna de Django |
+| sqlparse         | 0.6.0   | Dependencia interna de Django |
+| django-bootstrap5 | 26.2   | Ver justificación abajo |
+
+### Justificación de `django-bootstrap5`
+
+- **Necesidad:** el enunciado pide una interfaz con Bootstrap (tablas con scroll en contenedor adaptable, layout responsive) sin reinventar CSS propio ni depender de copiar archivos estáticos de Bootstrap a mano.
+- **Uso:** se agregó `django_bootstrap5` a `INSTALLED_APPS` en [config/settings.py](config/settings.py). En [templates/base.html](templates/base.html) se carga con `{% load django_bootstrap5 %}` al inicio del archivo, y se insertan los estilos y el JS de Bootstrap con `{% bootstrap_css %}` (en el `<head>`) y `{% bootstrap_javascript %}` (antes de cerrar `<body>`). Como todos los templates de la app heredan de `base.html`, cualquier página nueva recibe Bootstrap automáticamente.
+- **Comprobación:** al levantar el servidor y visitar cualquier ruta, las clases de Bootstrap usadas en los templates (`row`, `col-md-*`, `card`, `table`, `table-responsive`, `badge`, `btn`) se ven aplicadas — tarjetas con bordes y sombra, tabla con scroll horizontal en pantallas angostas, badges de color para el estado de cada zona.
 
 ## Comandos de verificación
 
@@ -81,124 +88,47 @@ python manage.py runserver
 
 Por defecto, el servidor queda disponible en `http://127.0.0.1:8000/`.
 
-## Endpoints disponibles
+## Estructura de datos y relaciones
 
-Según lo definido en [config/urls.py](config/urls.py) y [dispositivos/urls.py](dispositivos/urls.py) (namespace `dispositivos`, montado en la raíz `/`):
+Los datos de prueba viven en `data/`:
 
-| Método | Ruta                                    | `name`                    | Vista                        | Respuesta                                    |
-|--------|------------------------------------------|----------------------------|-------------------------------|-----------------------------------------------|
-| GET    | `/admin/`                                 | —                          | `admin.site.urls`             | Panel de administración de Django              |
-| GET    | `/`                                       | `dispositivos:inicio`      | `views.inicio`                | Template (`dispositivos/inicio.html`)          |
-| GET    | `/dispositivos/`                          | `dispositivos:catalogo`    | `views.catalogo`              | Template (`dispositivos/catalogo.html`)        |
-| GET    | `/medidores/`                             | `dispositivos:medidores`   | `views.lectura_medidor`       | Template (`dispositivos/medidores.html`)       |
-| GET    | `/paneles/`                               | `dispositivos:paneles`     | `views.paneles_solares`       | Template (`dispositivos/paneles.html`)         |
-| GET    | `/zonas/<zona_id>/dispositivos/`          | `dispositivos:por_zona`    | `views.dispositivos_zona`     | `HttpResponse` (texto plano, sin template)     |
-| GET    | `/alertas/<alerta_id>/detalle/`           | `dispositivos:por_alerta`  | `views.detalle_alerta`        | `HttpResponse` (texto plano, sin template)     |
-
-Todos los `name` usados en las etiquetas `{% url 'dispositivos:...' %}` de los templates coinciden exactamente con los definidos en `dispositivos/urls.py`.
-
-> **Nota de control de versiones:** al momento de escribir esto, las rutas `medidores` y `paneles` (vistas, urls y los enlaces de navegación correspondientes en `base.html`) están en el árbol de trabajo pero aún no se han commiteado. El último commit registrado (`Avance clase 4`) sólo incluye `inicio` y `catalogo`.
-
-## Templates, herencia y contexto
-
-En la Clase 4 se migraron las vistas que devolvían HTML embebido en `HttpResponse` a vistas que usan `render()` con Templates, aplicando herencia (`base.html` + páginas hijas) y contexto para pasar datos desde las Views.
-
-### Configuración
-
-En [config/settings.py](config/settings.py), `TEMPLATES["DIRS"]` apunta a la carpeta `templates/` en la raíz del proyecto:
-
-```python
-'DIRS': [BASE_DIR / "templates"],
+```
+data/
+├── zonas.json         # id, nombre, limite_kwh
+├── categorias.json    # id, nombre, descripcion
+└── dispositivos.json  # id, nombre, consumo_kwh, zona_id, categoria_id
 ```
 
-### Estructura de carpetas de templates
+Cada dispositivo pertenece a una única zona (`zona_id`) y a una única categoría (`categoria_id`); ambas relaciones se resuelven por búsqueda manual de `id` en `dispositivos/services.py` (funciones `zona_por_id`, `categoria_por_id`, `dispositivos_por_zona`), sin ORM ni claves foráneas de base de datos. El detalle completo de relaciones y multiplicidades está en [ANALISIS.md](ANALISIS.md).
+
+## Rutas disponibles
+
+Definidas en [config/urls.py](config/urls.py) y [dispositivos/urls.py](dispositivos/urls.py) (namespace `dispositivos`, montado en la raíz `/`):
+
+| Método | Ruta            | `name`                        | Vista                | Qué hace |
+|--------|-----------------|--------------------------------|-----------------------|----------|
+| GET    | `/admin/`        | —                              | `admin.site.urls`     | Panel de administración de Django (no se usa para el caso EcoEnergy) |
+| GET    | `/`              | `dispositivos:inicio`          | `views.inicio`        | Página de bienvenida del sistema |
+| GET    | `/zonas/`        | `dispositivos:listado_zonas`   | `views.listado_zonas` | Lista todas las zonas con su nombre, límite y cantidad de dispositivos, con acceso al detalle de cada una |
+| GET    | `/zonas/<id>/`   | `dispositivos:detalle_zona`    | `views.detalle_zona`  | Detalle de una zona: sus dispositivos con categoría, consumo total calculado y estado (`ALERTA` si el consumo total supera el límite, `NORMAL` en caso contrario). Si la zona no tiene dispositivos, muestra un mensaje en vez de una tabla vacía. Si el `id` no existe, responde 404 |
+
+Todos los `name` usados en las etiquetas `{% url 'dispositivos:...' %}` de los templates coinciden con los definidos en `dispositivos/urls.py`.
+
+## Templates y herencia
 
 ```
 templates/
 ├── base.html
 └── dispositivos/
     ├── inicio.html
-    ├── catalogo.html
-    ├── medidores.html
-    └── paneles.html
+    ├── listado_zonas.html
+    └── detalle_zona.html
 ```
 
-### Plantilla base (`templates/base.html`)
+`base.html` define `{% block title %}` y `{% block content %}`, carga Bootstrap y contiene la barra de navegación (`Inicio`, `Zonas`). Los tres templates hijos extienden `base.html` con `{% extends "base.html" %}` y sobreescriben esos bloques; ninguno tiene valores numéricos ni de estado escritos a mano — todo llega desde el contexto que arma la vista correspondiente en `dispositivos/views.py`.
 
-Define dos bloques que las plantillas hijas sobreescriben:
+## Estado actual
 
-- `{% block title %}` (dentro de `<title>`, con `EcoEnergy` como valor por defecto)
-- `{% block content %}` (dentro de `<main>`)
-
-Y una barra de navegación con enlaces generados con `{% url %}` al namespace `dispositivos`:
-
-```html
-<a href="{% url 'dispositivos:inicio' %}">Inicio</a>
-<a href="{% url 'dispositivos:catalogo' %}">Dispositivos</a>
-<a href="{% url 'dispositivos:medidores' %}">Medidores</a>
-<a href="{% url 'dispositivos:paneles' %}">Paneles</a>
-```
-
-### Templates hijos
-
-Los cuatro heredan de `base.html` con `{% extends "base.html" %}` y sobreescriben `title` y `content`:
-
-| Template                                   | Variables de contexto usadas (`{{ }}`)                          |
-|---------------------------------------------|-------------------------------------------------------------------|
-| `templates/dispositivos/inicio.html`         | `sistema`, `mensaje`, `asignatura`                                 |
-| `templates/dispositivos/catalogo.html`       | `dispositivos` (lista; itera `dispositivo.nombre`, `dispositivo.estado`) |
-| `templates/dispositivos/medidores.html`      | `medidores` (lista; itera `medidor.nombre`, `medidor.estado`)      |
-| `templates/dispositivos/paneles.html`        | `paneles` (lista; itera `panel.zona`, `panel.capacidad`, `panel.estado`) |
-
-### Views y contexto (`dispositivos/views.py`)
-
-De las vistas de la app, estas cuatro usan `render()`:
-
-| Función             | Template renderizado                | Claves del contexto                          |
-|----------------------|---------------------------------------|-----------------------------------------------|
-| `inicio`             | `dispositivos/inicio.html`            | `sistema`, `mensaje`, `asignatura`             |
-| `catalogo`            | `dispositivos/catalogo.html`          | `dispositivos`                                 |
-| `lectura_medidor`     | `dispositivos/medidores.html`         | `medidores`                                    |
-| `paneles_solares`     | `dispositivos/paneles.html`           | `paneles`                                      |
-
-Las otras dos vistas de la app (`dispositivos_zona` y `detalle_alerta`) todavía devuelven `HttpResponse` con texto plano y no usan Templates.
-
-### Ejemplo del patrón View → Contexto → Template (laboratorio Clase 4)
-
-El ejercicio de laboratorio de la Clase 4 es la ruta **Medidores** (`/medidores/`), separada de la demo de catálogo vista en clase:
-
-1. **View** ([dispositivos/views.py](dispositivos/views.py)) — `lectura_medidor(request)` arma una lista de diccionarios y la pasa como contexto bajo la clave `medidores`:
-
-    ```python
-    def lectura_medidor(request):
-        medidores = [
-            {"nombre": "Medidor de voltaje", "estado": "Rango dentro de lo normal: 42 kwh"},
-            {"nombre": "Medidor de temperatura", "estado": "Rango por encima del normal: 100ºC"},
-        ]
-        return render(request, "dispositivos/medidores.html", {"medidores": medidores})
-    ```
-
-2. **Contexto** — el diccionario `{"medidores": medidores}` viaja de la view al template.
-3. **Template** ([templates/dispositivos/medidores.html](templates/dispositivos/medidores.html)) — extiende `base.html`, sobreescribe `content` y recorre `medidores` con `{% for %}` mostrando `medidor.nombre` y `medidor.estado`.
-
-Como práctica adicional para reforzar el mismo patrón, se agregó también la ruta **Paneles** (`/paneles/`, vista `paneles_solares`), que sigue exactamente la misma estructura View → Contexto → Template pero con la clave de contexto `paneles`.
-
-### Cómo comprobar la navegación entre páginas
-
-Con el servidor corriendo (`python manage.py runserver`), visita `http://127.0.0.1:8000/` y usa los enlaces del `<nav>` de `base.html` para moverte entre **Inicio**, **Dispositivos**, **Medidores** y **Paneles**; cada uno debe cargar su template propio conservando el mismo encabezado y estructura heredados de `base.html`, y el `<title>` de la pestaña debe cambiar según el bloque `title` de cada página.
-
-## Estado actual y próximos pasos
-
-El proyecto ya tiene:
-
-- Proyecto `config` configurado (settings, urls, wsgi, asgi), con `TEMPLATES["DIRS"]` apuntando a `templates/`.
-- Base de datos SQLite por defecto (`db.sqlite3`), aún sin modelos propios.
-- App `dispositivos` con vistas, urls y templates (ver sección [Templates, herencia y contexto](#templates-herencia-y-contexto)).
-- Solo las apps internas de Django instaladas además de `dispositivos` (`admin`, `auth`, `contenttypes`, `sessions`, `messages`, `staticfiles`).
-- Ningún modelo de base de datos propio: los datos mostrados en las plantillas están hardcodeados en las views.
-
-**Próximos pasos:**
-
-- Definir modelos para zonas, dispositivos, medidores y paneles, y reemplazar los datos hardcodeados de las views por consultas reales.
-- Completar las vistas `dispositivos_zona` y `detalle_alerta` para que usen `render()` con Templates en vez de `HttpResponse` plano.
-- Commitear los avances pendientes de `medidores` y `paneles` (vistas, urls y navegación en `base.html`).
+- App `dispositivos` con las rutas de zonas funcionando end-to-end: listado, detalle, cálculo dinámico de consumo/estado, caso de zona vacía y 404 controlado para id inexistente.
+- Sin Models, sin migraciones propias, sin base de datos relacional para el dominio del proyecto — todo el estado vive en `data/*.json` y se lee en cada request.
+- Bootstrap integrado vía `django-bootstrap5` en toda la app a través de la herencia de `base.html`.
