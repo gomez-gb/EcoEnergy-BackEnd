@@ -1,0 +1,10 @@
+[
+  { "id": 1, "nombre": "Aire Acondicionado Bodega", "consumo_kwh": 220.5, "zona_id": 1, "categoria_id": 1 },
+  { "id": 2, "nombre": "Iluminación LED Bodega", "consumo_kwh": 80.0, "zona_id": 1, "categoria_id": 2 },
+  { "id": 3, "nombre": "Compresor de Frío", "consumo_kwh": 210.0, "zona_id": 1, "categoria_id": 1 },
+  { "id": 4, "nombre": "Aire Acondicionado Oficinas", "consumo_kwh": 90.0, "zona_id": 2, "categoria_id": 1 },
+  { "id": 5, "nombre": "Iluminación Oficinas", "consumo_kwh": 60.0, "zona_id": 2, "categoria_id": 2 },
+  { "id": 6, "nombre": "Estaciones de Trabajo", "consumo_kwh": 75.0, "zona_id": 2, "categoria_id": 3 },
+  { "id": 7, "nombre": "Servidor Principal", "consumo_kwh": 95.0, "zona_id": 3, "categoria_id": 3 },
+  { "id": 8, "nombre": "Switch de Red", "consumo_kwh": 40.0, "zona_id": 3, "categoria_id": 3 }
+]

@@ -1,0 +1,5 @@
+[
+  { "id": 1, "nombre": "Climatización", "descripcion": "Equipos de calefacción, ventilación y aire acondicionado" },
+  { "id": 2, "nombre": "Iluminación", "descripcion": "Luminarias y sistemas de iluminación general" },
+  { "id": 3, "nombre": "Cómputo", "descripcion": "Servidores, equipos de red y estaciones de trabajo" }
+]

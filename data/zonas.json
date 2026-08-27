@@ -1,0 +1,6 @@
+[
+  { "id": 1, "nombre": "Bodega Principal", "limite_kwh": 500.0 },
+  { "id": 2, "nombre": "Oficinas Administrativas", "limite_kwh": 300.0 },
+  { "id": 3, "nombre": "Sala de Servidores", "limite_kwh": 150.0 },
+  { "id": 4, "nombre": "Patio de Carga", "limite_kwh": 100.0 }
+]
