@@ -127,6 +127,21 @@ templates/
 
 `base.html` define `{% block title %}` y `{% block content %}`, carga Bootstrap y contiene la barra de navegación (`Inicio`, `Zonas`). Los tres templates hijos extienden `base.html` con `{% extends "base.html" %}` y sobreescriben esos bloques; ninguno tiene valores numéricos ni de estado escritos a mano — todo llega desde el contexto que arma la vista correspondiente en `dispositivos/views.py`.
 
+## Pruebas
+
+Con el servidor corriendo (`python manage.py runserver`), visita:
+
+- `/zonas/` — listado de las 4 zonas registradas en `data/zonas.json`.
+- `/zonas/1/` — Bodega Principal, consumo 510.5 kWh > límite 500 kWh → estado **ALERTA**.
+- `/zonas/2/` o `/zonas/3/` — consumo dentro del límite → estado **NORMAL**.
+- `/zonas/4/` — Patio de Carga, sin dispositivos registrados → mensaje "Esta zona no tiene dispositivos".
+- `/zonas/99/` — id inexistente → respuesta 404 controlada.
+
+Para comprobar que los datos se procesan dinámicamente, agrega un dispositivo
+válido a `data/dispositivos.json` (con un `id` único y un `zona_id`/`categoria_id`
+existentes) y recarga `/zonas/` o el detalle de esa zona sin reiniciar el
+servidor ni modificar ningún archivo de código.
+
 ## Estado actual
 
 - App `dispositivos` con las rutas de zonas funcionando end-to-end: listado, detalle, cálculo dinámico de consumo/estado, caso de zona vacía y 404 controlado para id inexistente.
