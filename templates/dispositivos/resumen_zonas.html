@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Resumen de Zonas{% endblock %}
+
+{% block content %}
+    <h1>Resumen de Zonas</h1>
+
+    <div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+        <div class="card-body">
+            <h6 class="card-subtitle text-muted">Total de zonas</h6>
+            <p class="card-text">{{ total_zonas }}</p>
+        </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+        <div class="card-body">
+            <h6 class="card-subtitle text-muted">Total de dispositivos</h6>
+            <p class="card-text">{{ total_dispositivos }}</p>
+        </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+        <div class="card-body">
+            <h6 class="card-subtitle text-muted">Consumo total general</h6>
+            <p class="card-text">{{ consumo_total_general }} kWh</p>
+        </div>
+        </div>
+    </div>
+    </div>
+
+    <div class="table-responsive">
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>Zona</th>
+            <th>Límite kWh</th>
+            <th>Dispositivos</th>
+            <th>Consumo kWh</th>
+            <th>Estado</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for zona in resumen_por_zona %}
+            <tr>
+            <td>{{ zona.nombre }}</td>
+            <td>{{ zona.limite_kwh }}</td>
+            <td>{{ zona.cantidad_dispositivos }}</td>
+            <td>{{ zona.consumo_total }}</td>
+            <td>
+                {% if zona.estado == "LÍMITE SUPERADO" %}
+                <span class="badge bg-danger">⚠ {{ zona.estado }}</span>
+                {% else %}
+                <span class="badge bg-success">✓ {{ zona.estado }}</span>
+                {% endif %}
+            </td>
+            </tr>
+        {% empty %}
+            <tr>
+            <td colspan="5">No hay zonas disponibles.</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+{% endblock %}
+

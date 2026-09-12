@@ -38,3 +38,23 @@ def categoria_por_id(categoria_id, categorias):
             return categoria
     return None
 
+def resumen_zona(zona, dispositivos_zona):
+    cantidad_dispositivos = len(dispositivos_zona)
+
+    consumo_total = sum(
+        item["consumo_kwh"] for item in dispositivos_zona
+    )
+
+    if consumo_total > zona["limite_kwh"]:
+        estado = "LÍMITE SUPERADO"
+
+    else:
+        estado = "DENTRO DEL LÍMITE"
+
+    resumen = {
+        "cantidad_dispositivos": cantidad_dispositivos,
+        "consumo_total": consumo_total,
+        "estado": estado
+    }
+
+    return resumen

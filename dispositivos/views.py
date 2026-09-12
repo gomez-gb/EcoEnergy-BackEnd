@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .services import cargar_dispositivos, cargar_zonas, dispositivos_por_zona, zona_por_id, cargar_categorias, categoria_por_id
+from .services import cargar_dispositivos, cargar_zonas, dispositivos_por_zona, zona_por_id, cargar_categorias, categoria_por_id, resumen_zona
 from django.http import Http404
 
 # Create your views here.
@@ -75,3 +75,27 @@ def detalle_zona(request, zona_id):
     }
 
     return render(request, "dispositivos/detalle_zona.html", contexto)
+
+def resumen_zonas(request):
+    zonas = cargar_zonas()
+    dispositivos = cargar_dispositivos()
+
+    resumen_por_zona = []
+    for zona in zonas:
+        dispositivos_zona = dispositivos_por_zona(zona["id"], dispositivos)
+        resumen = resumen_zona(zona, dispositivos_zona)
+        resumen_por_zona.append({**zona, **resumen})
+
+    total_zonas = len(zonas)
+    total_dispositivos = len(dispositivos)
+    consumo_total_general = sum(item["consumo_kwh"] for item in dispositivos)
+
+    contexto = {
+        "resumen_por_zona": resumen_por_zona,
+        "total_zonas": total_zonas,
+        "total_dispositivos": total_dispositivos,
+        "consumo_total_general": consumo_total_general,
+    }
+
+    return render(request, "dispositivos/resumen_zonas.html", contexto)
+
