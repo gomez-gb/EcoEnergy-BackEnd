@@ -1,6 +1,7 @@
 from django.db import models
 from core.models import BaseModel
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 
 class UserProfile(BaseModel):
@@ -12,6 +13,13 @@ class UserProfile(BaseModel):
     phone = models.CharField(max_length=12)
     address = models.CharField(max_length=150)
     employee_code = models.CharField(max_length=150, unique=True)
+
+    def clean(self):
+        super().clean()
+        if self.department_id and self.department.organization_id != self.organization_id:
+            raise ValidationError({
+                "department": "El departamento debe pertenecer a la organización seleccionada."
+            })
 
     def __str__(self):
         return self.user.username
