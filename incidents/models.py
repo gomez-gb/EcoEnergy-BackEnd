@@ -43,6 +43,15 @@ class IncidenciaSeguimiento(BaseModel):
     )
     note = models.TextField()
 
+    def clean(self):
+        super().clean()
+        if self.incidencia_id and self.author_id:
+            if self.author.organization_id != self.incidencia.zone.department.organization_id:
+                raise ValidationError({
+                    "author": "El autor del seguimiento debe pertenecer a la misma organización de la incidencia."
+                })
+
+
     def __str__(self):
         return f"Seguimiento de {self.incidencia.title} por {self.author.user.username}"
 
