@@ -1,6 +1,7 @@
 # organizations/models.py
 from django.db import models
 from core.models import BaseModel
+from django.core.exceptions import ValidationError
 
 class Organization(BaseModel):
 
@@ -20,6 +21,14 @@ class Department(BaseModel):
     name = models.CharField(max_length=150)
     description = models.TextField()
     is_active = models.BooleanField(default=True)
+
+    def clean(self):
+        super().clean()
+        if self.jefatura_id:
+            if self.jefatura.organization_id != self.organization_id:
+                raise ValidationError({"jefatura": "La jefatura debe pertenecer a la misma organización del departamento."})
+            if not self.jefatura.user.is_active:
+                raise ValidationError({"jefatura": "La jefatura debe ser un usuario activo."})
 
     def __str__(self):
         return self.name
