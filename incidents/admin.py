@@ -2,12 +2,20 @@ from django.contrib import admin
 from core.admin_utils import get_user_organization
 from organizations.models import Zone
 from .models import Incidencia, IncidenciaSeguimiento
+from accounts.models import UserProfile
 
 
 class IncidenciaSeguimientoInline(admin.TabularInline):
     model = IncidenciaSeguimiento
     extra = 0
     fields = ("author", "note")
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        organization = get_user_organization(request)
+        if organization is not None and db_field.name == "author":
+            kwargs["queryset"] = UserProfile.objects.filter(organization=organization)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 
 @admin.action(description="Marcar como resueltas", permissions=["change"])
@@ -50,4 +58,19 @@ class IncidenciaAdmin(admin.ModelAdmin):
             return True
         organization = get_user_organization(request)
         return obj.zone.department.organization_id == organization.id
+
+@admin.register(IncidenciaSeguimiento)
+class IncidenciaSeguimientoAdmin(admin.ModelAdmin):
+    list_display = ("incidencia", "author", "note")
+    search_fields = ("incidencia__title", "author__user__username")
+    list_filter = ("incidencia",)
+    list_select_related = ("incidencia", "author")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        organization = get_user_organization(request)
+        if organization is None:
+            return qs
+        return qs.filter(incidencia__zone__department__organization=organization)
+
 
