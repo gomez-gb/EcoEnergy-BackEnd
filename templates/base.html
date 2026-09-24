@@ -27,6 +27,26 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'dispositivos:resumen_zonas' %}">Resumen Zonas</a>
                 </li>
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'dashboard:dashboard' %}">Dashboard</a>
+                </li>
+                {% endif %}
+            </ul>
+            <ul class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                <li class="nav-item d-flex align-items-center">
+                    <span class="nav-link">{{ user.username }}</span>
+                    <form method="post" action="{% url 'logout' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="btn btn-outline-danger btn-sm" type="submit">Cerrar sesión</button>
+                    </form>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="btn btn-primary btn-sm" href="{% url 'login' %}">Ingresar</a>
+                </li>
+                {% endif %}
             </ul>
         </div>
     </div>
