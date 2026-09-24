@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard — {{ organization }}</h1>
+<p><a class="btn btn-primary" href="{% url 'dashboard:incidencia_list' %}">Ver incidencias</a></p>
+{% endblock %}

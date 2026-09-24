@@ -42,8 +42,11 @@ class IncidenciaAdmin(admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         organization = get_user_organization(request)
-        if organization is not None and db_field.name == "zone":
-            kwargs["queryset"] = Zone.objects.filter(department__organization=organization)
+        if organization is not None:
+            if db_field.name == "zone":
+                kwargs["queryset"] = Zone.objects.filter(department__organization=organization)
+            elif db_field.name == "reported_by":
+                kwargs["queryset"] = UserProfile.objects.filter(organization=organization)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def save_model(self, request, obj, form, change):
@@ -73,4 +76,20 @@ class IncidenciaSeguimientoAdmin(admin.ModelAdmin):
             return qs
         return qs.filter(incidencia__zone__department__organization=organization)
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        organization = get_user_organization(request)
+        if organization is not None:
+            if db_field.name == "author":
+                kwargs["queryset"] = UserProfile.objects.filter(organization=organization)
+            elif db_field.name == "incidencia":
+                kwargs["queryset"] = Incidencia.objects.filter(zone__department__organization=organization)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def has_change_permission(self, request, obj=None):
+        if not super().has_change_permission(request, obj):
+            return False
+        if obj is None or request.user.is_superuser:
+            return True
+        organization = get_user_organization(request)
+        return obj.incidencia.zone.department.organization_id == organization.id
 

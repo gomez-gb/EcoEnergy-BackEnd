@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Incidencias — {{ organization }}</h1>
+
+<div class="mb-3">
+    Tamaño de página:
+    <a href="?page_size=5" class="btn btn-sm btn-outline-secondary {% if page_size == 5 %}active{% endif %}">5</a>
+    <a href="?page_size=15" class="btn btn-sm btn-outline-secondary {% if page_size == 15 %}active{% endif %}">15</a>
+    <a href="?page_size=30" class="btn btn-sm btn-outline-secondary {% if page_size == 30 %}active{% endif %}">30</a>
+</div>
+
+
+<table class="table table-responsive">
+    <thead>
+        <tr><th>Zona</th><th>Reportado por</th><th>Estado</th></tr>
+    </thead>
+    <tbody>
+        {% for i in page_obj %}
+        <tr>
+            <td>{{ i.zone }}</td>
+            <td>{{ i.reported_by }}</td>
+            <td>{{ i.status }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">No hay incidencias registradas.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<nav>
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Página {{    page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endblock %}

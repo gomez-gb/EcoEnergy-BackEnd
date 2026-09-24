@@ -32,6 +32,23 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
+# Login
+
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "dashboard:dashboard"
+LOGOUT_REDIRECT_URL = "login"
+
+# Configuración Cookies
+
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "False").lower() == "true"
+SESSION_COOKIE_AGE = 60 * 60 * 2
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_HTTPONLY = True
+SESSION_SAVE_EVERY_REQUEST = False
+SESSION_COOKIE_SECURE = COOKIE_SECURE
+CSRF_COOKIE_SECURE = COOKIE_SECURE
+SESSION_COOKIE_SAMESITE = "Lax"
+
 
 # Application definition
 
@@ -48,6 +65,7 @@ INSTALLED_APPS = [
     'organizations',
     'accounts',
     'incidents',
+    'dashboard'
 ]
 
 MIDDLEWARE = [
