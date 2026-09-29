@@ -28,7 +28,7 @@ class Command(BaseCommand):
             ) | Permission.objects.filter(
                 content_type__app_label="incidents",
                 codename__in=[
-                    "view_incidencia", "add_incidencia", "change_incidencia",
+                    "view_incidencia", "add_incidencia", "change_incidencia", "delete_incidencia",
                     "view_incidenciaseguimiento", "add_incidenciaseguimiento", "change_incidenciaseguimiento",
                 ],
             )
