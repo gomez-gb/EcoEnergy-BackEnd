@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Incidencias — {{ organization }}</h1>
+
+{% if perms.incidents.add_incidencia %}
+<p>
+    <a href="{% url 'incidents:incidencia_create' %}" class="btn btn-primary">Nueva incidencia</a>
+</p>
+{% endif %}
+
+<div class="mb-3">
+    Tamaño de página:
+    <a href="?page_size=5" class="btn btn-sm btn-outline-secondary {% if page_size == 5 %}active{% endif %}">5</a>
+    <a href="?page_size=15" class="btn btn-sm btn-outline-secondary {% if page_size == 15 %}active{% endif %}">15</a>
+    <a href="?page_size=30" class="btn btn-sm btn-outline-secondary {% if page_size == 30 %}active{% endif %}">30</a>
+</div>
+
+<table class="table table-responsive">
+    <thead>
+        <tr>
+            <th>Zona</th>
+            <th>Título</th>
+            <th>Reportado por</th>
+            <th>Estado</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for i in incidencias %}
+        <tr>
+            <td>{{ i.zone }}</td>
+            <td>{{ i.title }}</td>
+            <td>{{ i.reported_by }}</td>
+            <td>{{ i.get_status_display }}</td>
+            <td>
+                {% if perms.incidents.change_incidencia %}
+                <a href="{% url 'incidents:incidencia_update' i.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
+                {% endif %}
+                {% if perms.incidents.delete_incidencia %}
+                <a href="{% url 'incidents:incidencia_delete' i.pk %}"
+                    class="btn btn-sm btn-outline-danger">Eliminar</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">No hay incidencias registradas.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav>
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% if form %}
+{% include "incidents/_incidencia_form_modal.html" %}
+{% endif %}
+{% endblock %}
