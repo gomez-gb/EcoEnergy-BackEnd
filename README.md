@@ -4,6 +4,19 @@ Backend del proyecto **EcoEnergy**, desarrollado con **Python y Django**, con co
 
 Este documento cubre la puesta en marcha completa del proyecto desde cero. Fue verificado clonando el repositorio en una carpeta aparte, con un entorno virtual y una base de datos PostgreSQL nuevos, siguiendo estos mismos pasos.
 
+### Arranque rápido con Docker (recomendado)
+
+1. Clonar el repo y copiar `.env.example` a `.env`.
+2. `docker compose up -d --build`
+3. `docker compose exec web python manage.py migrate`
+4. `docker compose exec web python manage.py seed_demo_data`
+5. `docker compose exec web python manage.py createsuperuser`
+6. Ir a `http://localhost:8000`
+
+> Tras modificar `.env`, el contenedor `web` necesita recrearse (`docker compose up -d --force-recreate`) para que los cambios se apliquen.
+
+El resto de esta sección (`## 1` a `## 9`) documenta el camino alternativo sin Docker, con entorno virtual y PostgreSQL instalados a mano.
+
 ## Requisitos previos
 
 - **Python 3.14** (o superior, compatible con Django 6.1)
@@ -93,6 +106,11 @@ DJANGO_SECRET_KEY=una-clave-larga-y-aleatoria-solo-para-tu-entorno
 
 `.env` está en `.gitignore` y nunca debe subirse al repositorio; `.env.example` sí se versiona, como plantilla sin datos reales.
 
+Variables adicionales que también acepta `.env` (ya vienen con un valor por defecto seguro si no se definen):
+
+- `COOKIE_SECURE` — controla la flag `Secure` de las cookies de sesión.
+- `DJANGO_DEBUG` — controla `DEBUG` de Django.
+
 ## 6. Aplicar las migraciones
 
 ```bash
@@ -149,8 +167,10 @@ python manage.py runserver
 - **`core`** — `BaseModel` abstracto (`created_at`, `updated_at`, `deleted_at`, este último usado para soft-delete de Zonas) y `core/admin_utils.get_user_organization`, la función que resuelve la organización del usuario logueado y que usan todos los `ModelAdmin` del proyecto para hacer scoping. También vive aquí el management command `seed_demo_data`.
 - **`organizations`** — `Organization` → `Department` → `Zone`, la jerarquía estructural de una organización cliente. `Department` valida en `clean()` que su jefatura pertenezca a la misma organización y sea un usuario activo. El Admin de `Zone` incluye la acción personalizada "Archivar zonas seleccionadas" (soft-delete vía `deleted_at`, sin borrado real).
 - **`accounts`** — `UserProfile`, que extiende `auth.User` (uno a uno) con organización, departamento, RUT, teléfono, dirección y código de empleado. Valida en `clean()` que su departamento pertenezca a su misma organización.
-- **`incidents`** — `Incidencia` (con estados Abierta/En proceso/Resuelta, la acción personalizada "Marcar como resueltas", y una validación `clean()` que exige que quien reporta pertenezca a la misma organización que la zona afectada) e `IncidenciaSeguimiento` (notas de seguimiento, gestionadas como **Inline** dentro del formulario de `Incidencia`, no como tabla independiente).
+- **`incidents`**: modelos `Incidencia`/`IncidenciaSeguimiento` con scoping por organización. CRUD web completo en `/incidencias/` (listado paginado, crear/editar vía modal, borrado lógico con confirmación SweetAlert2), con evidencia fotográfica opcional (`evidence`, validada por tamaño/extensión/contenido real). `IncidenciaSeguimiento` solo gestionable desde el Admin (Inline).
+- **`dashboard`**: punto de entrada tras el login (`LOGIN_REDIRECT_URL`), requiere sesión iniciada.
 - **`dispositivos`** — módulo previo (Unidad 1) sin relación con la base de datos PostgreSQL ni con los modelos anteriores: lee zonas/categorías/dispositivos de prueba desde JSON en `data/` y expone rutas de solo lectura (`/`, `/zonas/`, `/zonas/<id>/`) calculando consumo y estado en cada request. Detalle completo de esas rutas y relaciones en [ANALISIS.md](ANALISIS.md).
+- **Autenticación**: login y logout usan las vistas estándar de Django (`django.contrib.auth.urls`), montadas en `/accounts/login/` y `/accounts/logout/`.
 
 ## Comandos de verificación
 

@@ -8,7 +8,7 @@ from .models import Incidencia
 class IncidenciaForm(forms.ModelForm):
     class Meta:
         model = Incidencia
-        fields = ["zone", "title", "description", "status"]
+        fields = ["zone", "title", "description", "status", "evidence"]
         widgets = {
             "zone": forms.Select(attrs={"class": "form-select"}),
             "title": forms.TextInput(attrs={"class": "form-control"}),
@@ -28,3 +28,4 @@ class IncidenciaForm(forms.ModelForm):
         if len(title) < 5:
             raise ValidationError("Ingrese al menos 5 caracteres.")
         return title
+

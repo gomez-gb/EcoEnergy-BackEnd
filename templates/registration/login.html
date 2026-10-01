@@ -1,19 +1,30 @@
 {% extends "base.html" %}
+{% load django_bootstrap5 %}
 
 {% block content %}
-<h1>Ingreso al sistema</h1>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card mt-5">
+                <div class="card-body">
+                    <h1 class="h3 mb-4 text-center">Ingreso al sistema</h1>
 
-{% if form.errors %}
-<div class="alert alert-danger">
-    Usuario o contraseña incorrectos.
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        Usuario o contraseña incorrectos.
+                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {% bootstrap_form form %}
+                        <button class="btn btn-primary w-100 mt-2" type="submit">
+                            Ingresar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-{% endif %}
-
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button class="btn btn_primary" type="submit">
-        Ingresar
-    </button>
-</form>
 {% endblock %}
