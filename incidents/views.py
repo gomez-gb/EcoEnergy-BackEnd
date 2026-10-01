@@ -1,11 +1,12 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
-from django.views.generic import ListView, CreateView, UpdateView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from .forms import IncidenciaForm
 from .models import Incidencia
-from django.views.generic import DeleteView
 from django.http import HttpResponseRedirect
 from django.utils import timezone
 from django.contrib import messages
@@ -70,14 +71,23 @@ class IncidenciaPageContextMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         organization = self.get_organization()
-        context["incidencias"] = (
+        queryset = (
             Incidencia.objects
             .filter(zone__department__organization=organization, deleted_at__isnull=True)
             .select_related("zone", "reported_by")
             .order_by("-created_at")
         )
+        page_size = self.request.session.get("incidencia_page_size", 15)
+        paginator = Paginator(queryset, page_size)
+        page_obj = paginator.get_page(self.request.GET.get("page", 1))
+
+        context["incidencias"] = page_obj
+        context["page_obj"] = page_obj
+        context["paginator"] = paginator
+        context["is_paginated"] = page_obj.has_other_pages()
         context["organization"] = organization
         context["open_modal"] = True
+        context["page_size"] = page_size
         return context
 
 
@@ -115,6 +125,12 @@ class IncidenciaUpdateView(
     success_url = reverse_lazy("incidents:incidencia_list")
     success_message = "Incidencia actualizada correctamente."
 
+    def get_queryset(self):
+        return Incidencia.objects.filter(
+            zone__department__organization=self.get_organization(),
+            deleted_at__isnull=True,
+        )
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["organization"] = self.get_organization()
@@ -125,9 +141,11 @@ class IncidenciaDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteVi
     permission_required = "incidents.delete_incidencia"
     raise_exception = True
     model = Incidencia
-    template_name = "incidents/incidencia_confirm_delete.html"
     success_url = reverse_lazy("incidents:incidencia_list")
     success_message = "Incidencia archivada correctamente."
+
+    def get(self, request, *args, **kwargs):
+        return redirect("incidents:incidencia_list")
 
     def get_queryset(self):
         profile = getattr(self.request.user, "profile", None)

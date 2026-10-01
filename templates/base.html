@@ -53,6 +53,8 @@
     </nav>
     <main>{% block content %}{% endblock %}</main>
     {% bootstrap_javascript %}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {% block scripts %}{% endblock %}
 </body>
 
 </html>

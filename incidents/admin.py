@@ -62,6 +62,9 @@ class IncidenciaAdmin(admin.ModelAdmin):
         organization = get_user_organization(request)
         return obj.zone.department.organization_id == organization.id
 
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 @admin.register(IncidenciaSeguimiento)
 class IncidenciaSeguimientoAdmin(admin.ModelAdmin):
     list_display = ("incidencia", "author", "note")

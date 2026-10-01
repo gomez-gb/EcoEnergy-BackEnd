@@ -1,5 +1,7 @@
 ## Relaciones y multiplicidades
 
+> Documento de Fase 1 (modelo JSON de `dispositivos`, sin ORM). El modelo de datos real del proyecto actual está en `docs/Diagrama ER BackEnd.drawio.png`.
+
 - Zona (1) — (0..*) Dispositivo: cada dispositivo pertenece a una única zona,
   vía `dispositivos[].zona_id → zonas[].id`.
 - Categoria (1) — (0..*) Dispositivo: cada dispositivo pertenece a una única

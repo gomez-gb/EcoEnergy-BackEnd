@@ -1,6 +1,7 @@
 from django.db import models
 from core.models import BaseModel
 from django.core.exceptions import ValidationError
+from .validators import validate_evidence_file
 
 
 class Incidencia(BaseModel):
@@ -15,13 +16,21 @@ class Incidencia(BaseModel):
 
     zone = models.ForeignKey(
         "organizations.Zone", on_delete=models.PROTECT, related_name="incidencias",
+        verbose_name="Zona",
     )
     reported_by = models.ForeignKey(
         "accounts.UserProfile", on_delete=models.PROTECT, related_name="incidencias_reportadas",
+        verbose_name="Reportado por",
     )
-    title = models.CharField(max_length=150)
-    description = models.TextField()
-    status = models.CharField(max_length=20, choices=ESTADO_CHOICES, default=ESTADO_ABIERTA)
+    title = models.CharField(max_length=150, verbose_name="Título")
+    description = models.TextField(verbose_name="Descripción")
+    status = models.CharField(max_length=20, choices=ESTADO_CHOICES, default=ESTADO_ABIERTA, verbose_name="Estado")
+    evidence = models.ImageField(
+        upload_to="incidencias/%Y/%m/",
+        blank=True,
+        validators=[validate_evidence_file],
+        verbose_name="Evidencia",
+    )
 
     def __str__(self):
         return f"{self.title} ({self.get_status_display()})"
