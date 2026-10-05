@@ -163,10 +163,14 @@ class Command(BaseCommand):
         perfiles = []
         for username, nombre_grupo, rut, phone, address, employee_code in usuarios:
             grupo = Group.objects.get(name=nombre_grupo)
-            user, created = User.objects.get_or_create(username=username, defaults={"is_staff": True})
+            user, created = User.objects.get_or_create(username=username)
             if created:
                 user.set_password("Test1234!")
-                user.save()
+            # is_staff solo habilita /admin/, reservado al administrador central
+            # (superusuario) — estos roles de organización nunca deben entrar ahí.
+            if user.is_staff:
+                user.is_staff = False
+            user.save()
             user.groups.add(grupo)
             perfil, _ = UserProfile.objects.get_or_create(
                 user=user,

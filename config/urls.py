@@ -14,14 +14,19 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
 from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
+from core.admin_site import ecoenergy_admin_site
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # Intercepta el login propio del Admin de Django ANTES de que admin.site.urls
+    # lo registre — así cualquiera que caiga sin sesión en /admin/ va al login
+    # principal de la app (con el mismo ?next= preservado), no a un formulario
+    # de login distinto y con otro estilo.
+    path("admin/login/", RedirectView.as_view(pattern_name="login", query_string=True)),
+    path('admin/', ecoenergy_admin_site.urls),
     path("", RedirectView.as_view(pattern_name="dashboard:dashboard", permanent=False)),
     path("accounts/", include("django.contrib.auth.urls")),
     path("dashboard/", include("dashboard.urls")),

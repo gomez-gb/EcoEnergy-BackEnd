@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import Organization, Department, Zone
 from core.admin_utils import get_user_organization
+from core.admin_site import ecoenergy_admin_site
 from accounts.models import UserProfile
 from django.utils import timezone
 
@@ -10,7 +11,7 @@ def archivar_zonas(modeladmin, request, queryset):
     actualizadas = queryset.filter(deleted_at__isnull=True).update(deleted_at=ahora, updated_at=ahora)
     modeladmin.message_user(request, f"{actualizadas} zona(s) archivada(s).")
 
-@admin.register(Organization)
+@admin.register(Organization, site=ecoenergy_admin_site)
 class OrganizationAdmin(admin.ModelAdmin):
     list_display = ("commercial_name", "legal_name", "contact_email", "tax_id", "is_active")
     search_fields = ("commercial_name", "legal_name", "tax_id")
@@ -32,7 +33,7 @@ class OrganizationAdmin(admin.ModelAdmin):
         return obj.pk == organization.pk
 
 
-@admin.register(Department)
+@admin.register(Department, site=ecoenergy_admin_site)
 class DepartmentAdmin(admin.ModelAdmin):
     list_display = ("name", "organization", "jefatura", "is_active")
     search_fields = ("name", "organization__commercial_name")
@@ -69,7 +70,7 @@ class DepartmentAdmin(admin.ModelAdmin):
         return obj.organization_id == organization.id
 
 
-@admin.register(Zone)
+@admin.register(Zone, site=ecoenergy_admin_site)
 class ZoneAdmin(admin.ModelAdmin):
     list_display = ("name", "department", "is_active")
     search_fields = ("name", "department__name")

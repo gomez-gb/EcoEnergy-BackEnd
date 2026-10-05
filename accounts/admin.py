@@ -2,9 +2,10 @@ from django.contrib import admin
 from .models import UserProfile
 from organizations.models import Department, Organization
 from core.admin_utils import get_user_organization
+from core.admin_site import ecoenergy_admin_site
 
 
-@admin.register(UserProfile)
+@admin.register(UserProfile, site=ecoenergy_admin_site)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ("user", "organization", "department")
     search_fields = ("user__username", "employee_code", "organization__commercial_name", "department__name")

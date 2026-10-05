@@ -1,5 +1,6 @@
 from django.contrib import admin
 from core.admin_utils import get_user_organization
+from core.admin_site import ecoenergy_admin_site
 from organizations.models import Zone
 from .models import Incident, IncidentFollowUp
 from accounts.models import UserProfile
@@ -24,7 +25,7 @@ def marcar_resueltas(modeladmin, request, queryset):
     modeladmin.message_user(request, f"{actualizadas} incidencia(s) marcada(s) como resuelta(s).")
 
 
-@admin.register(Incident)
+@admin.register(Incident, site=ecoenergy_admin_site)
 class IncidentAdmin(admin.ModelAdmin):
     list_display = ("title", "zone", "reported_by", "status")
     search_fields = ("title", "zone__name", "reported_by__user__username")
@@ -65,7 +66,7 @@ class IncidentAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-@admin.register(IncidentFollowUp)
+@admin.register(IncidentFollowUp, site=ecoenergy_admin_site)
 class IncidentFollowUpAdmin(admin.ModelAdmin):
     list_display = ("incident", "author", "note")
     search_fields = ("incident__title", "author__user__username")

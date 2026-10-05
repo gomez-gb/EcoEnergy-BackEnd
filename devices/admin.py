@@ -1,11 +1,12 @@
 from django.contrib import admin
 from core.admin_utils import get_user_organization
+from core.admin_site import ecoenergy_admin_site
 from organizations.models import Zone
 from accounts.models import UserProfile
 from .models import DeviceCategory, Device, DeviceReading, MaintenanceLog
 
 
-@admin.register(DeviceCategory)
+@admin.register(DeviceCategory, site=ecoenergy_admin_site)
 class DeviceCategoryAdmin(admin.ModelAdmin):
     list_display = ("name",)
     search_fields = ("name",)
@@ -17,7 +18,7 @@ class DeviceReadingInline(admin.TabularInline):
     fields = ("recorded_at", "consumption_kwh")
 
 
-@admin.register(Device)
+@admin.register(Device, site=ecoenergy_admin_site)
 class DeviceAdmin(admin.ModelAdmin):
     list_display = ("name", "serial_code", "zone", "category", "is_active")
     search_fields = ("name", "serial_code", "zone__name")
@@ -50,7 +51,7 @@ class DeviceAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(DeviceReading)
+@admin.register(DeviceReading, site=ecoenergy_admin_site)
 class DeviceReadingAdmin(admin.ModelAdmin):
     list_display = ("device", "recorded_at", "consumption_kwh")
     search_fields = ("device__name", "device__serial_code")
@@ -82,7 +83,7 @@ class DeviceReadingAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(MaintenanceLog)
+@admin.register(MaintenanceLog, site=ecoenergy_admin_site)
 class MaintenanceLogAdmin(admin.ModelAdmin):
     list_display = ("device", "performed_by", "performed_at")
     search_fields = ("device__name", "performed_by__user__username")
