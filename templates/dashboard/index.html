@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Dashboard — {{ organization }}</h1>
-<p><a class="btn btn-primary" href="{% url 'incidents:incidencia_list' %}">Ver incidencias</a></p>
+<p><a class="btn btn-primary" href="{% url 'incidents:incident_list' %}">Ver incidencias</a></p>
+<p><a class="btn btn-primary" href="{% url 'devices:device_list' %}">Ver dispositivos</a></p>
 {% endblock %}

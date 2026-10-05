@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'organizations',
     'accounts',
     'incidents',
+    'devices',
     'dashboard'
 ]
 

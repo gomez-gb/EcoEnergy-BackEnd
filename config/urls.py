@@ -24,7 +24,8 @@ urlpatterns = [
     path("", include("dispositivos.urls")),
     path("accounts/", include("django.contrib.auth.urls")),
     path("dashboard/", include("dashboard.urls")),
-    path("incidencias/", include("incidents.urls"))
+    path("incidencias/", include("incidents.urls")),
+    path("dispositivos-admin/", include("devices.urls")),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

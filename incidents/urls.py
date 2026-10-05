@@ -4,8 +4,8 @@ from . import views
 app_name = "incidents"
 
 urlpatterns = [
-    path("", views.IncidenciaListView.as_view(), name="incidencia_list"),
-    path("new/", views.IncidenciaCreateView.as_view(), name="incidencia_create"),
-    path("<int:pk>/edit/", views.IncidenciaUpdateView.as_view(), name="incidencia_update"),
-    path("<int:pk>/delete/", views.IncidenciaDeleteView.as_view(), name="incidencia_delete"),
+    path("", views.IncidentListView.as_view(), name="incident_list"),
+    path("new/", views.IncidentCreateView.as_view(), name="incident_create"),
+    path("<int:pk>/edit/", views.IncidentUpdateView.as_view(), name="incident_update"),
+    path("<int:pk>/delete/", views.IncidentDeleteView.as_view(), name="incident_delete"),
 ]

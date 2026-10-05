@@ -1,12 +1,12 @@
 from django.contrib import admin
 from core.admin_utils import get_user_organization
 from organizations.models import Zone
-from .models import Incidencia, IncidenciaSeguimiento
+from .models import Incident, IncidentFollowUp
 from accounts.models import UserProfile
 
 
-class IncidenciaSeguimientoInline(admin.TabularInline):
-    model = IncidenciaSeguimiento
+class IncidentFollowUpInline(admin.TabularInline):
+    model = IncidentFollowUp
     extra = 0
     fields = ("author", "note")
 
@@ -20,17 +20,17 @@ class IncidenciaSeguimientoInline(admin.TabularInline):
 
 @admin.action(description="Marcar como resueltas", permissions=["change"])
 def marcar_resueltas(modeladmin, request, queryset):
-    actualizadas = queryset.update(status=Incidencia.ESTADO_RESUELTA)
+    actualizadas = queryset.update(status=Incident.ESTADO_RESUELTA)
     modeladmin.message_user(request, f"{actualizadas} incidencia(s) marcada(s) como resuelta(s).")
 
 
-@admin.register(Incidencia)
-class IncidenciaAdmin(admin.ModelAdmin):
+@admin.register(Incident)
+class IncidentAdmin(admin.ModelAdmin):
     list_display = ("title", "zone", "reported_by", "status")
     search_fields = ("title", "zone__name", "reported_by__user__username")
     list_filter = ("status", "zone")
     list_select_related = ("zone", "reported_by")
-    inlines = [IncidenciaSeguimientoInline]
+    inlines = [IncidentFollowUpInline]
     actions = [marcar_resueltas]
 
     def get_queryset(self, request):
@@ -65,27 +65,27 @@ class IncidenciaAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-@admin.register(IncidenciaSeguimiento)
-class IncidenciaSeguimientoAdmin(admin.ModelAdmin):
-    list_display = ("incidencia", "author", "note")
-    search_fields = ("incidencia__title", "author__user__username")
-    list_filter = ("incidencia",)
-    list_select_related = ("incidencia", "author")
+@admin.register(IncidentFollowUp)
+class IncidentFollowUpAdmin(admin.ModelAdmin):
+    list_display = ("incident", "author", "note")
+    search_fields = ("incident__title", "author__user__username")
+    list_filter = ("incident",)
+    list_select_related = ("incident", "author")
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         organization = get_user_organization(request)
         if organization is None:
             return qs
-        return qs.filter(incidencia__zone__department__organization=organization)
+        return qs.filter(incident__zone__department__organization=organization)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         organization = get_user_organization(request)
         if organization is not None:
             if db_field.name == "author":
                 kwargs["queryset"] = UserProfile.objects.filter(organization=organization)
-            elif db_field.name == "incidencia":
-                kwargs["queryset"] = Incidencia.objects.filter(zone__department__organization=organization)
+            elif db_field.name == "incident":
+                kwargs["queryset"] = Incident.objects.filter(zone__department__organization=organization)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def has_change_permission(self, request, obj=None):
@@ -94,5 +94,7 @@ class IncidenciaSeguimientoAdmin(admin.ModelAdmin):
         if obj is None or request.user.is_superuser:
             return True
         organization = get_user_organization(request)
-        return obj.incidencia.zone.department.organization_id == organization.id
+        return obj.incident.zone.department.organization_id == organization.id
 
+    def has_delete_permission(self, request, obj=None):
+        return False

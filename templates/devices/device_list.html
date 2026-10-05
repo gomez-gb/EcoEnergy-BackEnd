@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Incidencias — {{ organization }}</h1>
+<h1>Dispositivos — {{ organization }}</h1>
 
-{% if perms.incidents.add_incidencia %}
+{% if perms.devices.add_device %}
 <p>
-    <a href="{% url 'incidents:incidencia_create' %}" class="btn btn-primary">Nueva incidencia</a>
+    <a href="{% url 'devices:device_create' %}" class="btn btn-primary">Nuevo dispositivo</a>
 </p>
 {% endif %}
 
@@ -18,35 +18,29 @@
 <table class="table table-responsive">
     <thead>
         <tr>
+            <th>Nombre</th>
+            <th>Código de serie</th>
             <th>Zona</th>
-            <th>Título</th>
-            <th>Reportado por</th>
-            <th>Estado</th>
-            <th>Evidencia</th>
+            <th>Categoría</th>
+            <th>Activo</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-        {% for i in incidencias %}
+        {% for d in devices %}
         <tr>
-            <td>{{ i.zone }}</td>
-            <td>{{ i.title }}</td>
-            <td>{{ i.reported_by }}</td>
-            <td>{{ i.get_status_display }}</td>
+            <td>{{ d.name }}</td>
+            <td>{{ d.serial_code }}</td>
+            <td>{{ d.zone }}</td>
+            <td>{{ d.category }}</td>
+            <td>{{ d.is_active|yesno:"Sí,No" }}</td>
             <td>
-                {% if i.evidence %}
-                <img src="{{ i.evidence.url }}" alt="Evidencia de {{ i.title }}" width="50" class="img-fluid rounded">
-                {% else %}
-                <span class="text-muted">Sin imagen</span>
+                {% if perms.devices.change_device %}
+                <a href="{% url 'devices:device_update' d.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
                 {% endif %}
-            </td>
-            <td>
-                {% if perms.incidents.change_incidencia %}
-                <a href="{% url 'incidents:incidencia_update' i.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
-                {% endif %}
-                {% if perms.incidents.delete_incidencia %}
-                <form id="delete-{{ i.pk }}" method="post"
-                    action="{% url 'incidents:incidencia_delete' i.pk %}" class="d-inline">
+                {% if perms.devices.delete_device %}
+                <form id="delete-{{ d.pk }}" method="post"
+                    action="{% url 'devices:device_delete' d.pk %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-sm btn-outline-danger js-delete">Eliminar</button>
                 </form>
@@ -55,7 +49,7 @@
         </tr>
         {% empty %}
         <tr>
-            <td colspan="6">No hay incidencias registradas.</td>
+            <td colspan="6">No hay dispositivos registrados.</td>
         </tr>
         {% endfor %}
     </tbody>
@@ -76,7 +70,7 @@
 {% endif %}
 
 {% if form %}
-{% include "incidents/_incidencia_form_modal.html" %}
+{% include "devices/_device_form_modal.html" %}
 {% endif %}
 {% endblock %}
 
@@ -85,15 +79,15 @@
 document.querySelectorAll(".js-delete").forEach(button => {
     button.addEventListener("click", async (event) => {
         if (!window.Swal) {
-            if (!window.confirm("¿Eliminar la incidencia?")) {
+            if (!window.confirm("¿Eliminar el dispositivo?")) {
                 event.preventDefault();
             }
             return;
         }
         event.preventDefault();
         const result = await Swal.fire({
-            title: "¿Eliminar la incidencia?",
-            text: "Esta acción la archiva y deja de aparecer en el listado.",
+            title: "¿Eliminar el dispositivo?",
+            text: "Esta acción lo archiva y deja de aparecer en el listado.",
             icon: "warning",
             showCancelButton: true,
             confirmButtonText: "Eliminar",

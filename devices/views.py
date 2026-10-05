@@ -5,22 +5,22 @@ from django.core.paginator import Paginator
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from .forms import IncidentForm
-from .models import Incident
 from django.http import HttpResponseRedirect
 from django.utils import timezone
 from django.contrib import messages
+from .forms import DeviceForm
+from .models import Device
 
 
 ALLOWED_PAGE_SIZES = {5, 15, 30}
 
 
-class IncidentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
-    permission_required = "incidents.view_incident"
+class DeviceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    permission_required = "devices.view_device"
     raise_exception = True
-    model = Incident
-    template_name = "incidents/incident_list.html"
-    context_object_name = "incidencias"
+    model = Device
+    template_name = "devices/device_list.html"
+    context_object_name = "devices"
 
     def get_organization(self):
         profile = getattr(self.request.user, "profile", None)
@@ -31,12 +31,11 @@ class IncidentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_queryset(self):
         organization = self.get_organization()
         return (
-            Incident.objects
+            Device.objects
             .filter(zone__department__organization=organization, deleted_at__isnull=True)
-            .select_related("zone", "reported_by")
-            .order_by("-created_at")
+            .select_related("zone", "category")
+            .order_by("name")
         )
-
 
     def get_paginate_by(self, queryset):
         raw_size = self.request.GET.get("page_size")
@@ -46,8 +45,8 @@ class IncidentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             except ValueError:
                 selected_size = 15
             if selected_size in ALLOWED_PAGE_SIZES:
-                self.request.session["incidencia_page_size"] = selected_size
-        page_size = self.request.session.get("incidencia_page_size", 15)
+                self.request.session["device_page_size"] = selected_size
+        page_size = self.request.session.get("device_page_size", 15)
         self.page_size = page_size
         return page_size
 
@@ -58,7 +57,7 @@ class IncidentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class IncidentPageContextMixin:
+class DevicePageContextMixin:
     def get_profile(self):
         profile = getattr(self.request.user, "profile", None)
         if profile is None:
@@ -72,16 +71,16 @@ class IncidentPageContextMixin:
         context = super().get_context_data(**kwargs)
         organization = self.get_organization()
         queryset = (
-            Incident.objects
+            Device.objects
             .filter(zone__department__organization=organization, deleted_at__isnull=True)
-            .select_related("zone", "reported_by")
-            .order_by("-created_at")
+            .select_related("zone", "category")
+            .order_by("name")
         )
-        page_size = self.request.session.get("incidencia_page_size", 15)
+        page_size = self.request.session.get("device_page_size", 15)
         paginator = Paginator(queryset, page_size)
         page_obj = paginator.get_page(self.request.GET.get("page", 1))
 
-        context["incidencias"] = page_obj
+        context["devices"] = page_obj
         context["page_obj"] = page_obj
         context["paginator"] = paginator
         context["is_paginated"] = page_obj.has_other_pages()
@@ -91,42 +90,38 @@ class IncidentPageContextMixin:
         return context
 
 
-class IncidentCreateView(
+class DeviceCreateView(
     LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin,
-    IncidentPageContextMixin, CreateView,
+    DevicePageContextMixin, CreateView,
 ):
-    permission_required = "incidents.add_incident"
+    permission_required = "devices.add_device"
     raise_exception = True
-    model = Incident
-    form_class = IncidentForm
-    template_name = "incidents/incident_list.html"
-    success_url = reverse_lazy("incidents:incident_list")
-    success_message = "Incidencia creada correctamente."
+    model = Device
+    form_class = DeviceForm
+    template_name = "devices/device_list.html"
+    success_url = reverse_lazy("devices:device_list")
+    success_message = "Dispositivo creado correctamente."
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["organization"] = self.get_organization()
         return kwargs
 
-    def form_valid(self, form):
-        form.instance.reported_by = self.get_profile()
-        return super().form_valid(form)
 
-
-class IncidentUpdateView(
+class DeviceUpdateView(
     LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin,
-    IncidentPageContextMixin, UpdateView,
+    DevicePageContextMixin, UpdateView,
 ):
-    permission_required = "incidents.change_incident"
+    permission_required = "devices.change_device"
     raise_exception = True
-    model = Incident
-    form_class = IncidentForm
-    template_name = "incidents/incident_list.html"
-    success_url = reverse_lazy("incidents:incident_list")
-    success_message = "Incidencia actualizada correctamente."
+    model = Device
+    form_class = DeviceForm
+    template_name = "devices/device_list.html"
+    success_url = reverse_lazy("devices:device_list")
+    success_message = "Dispositivo actualizado correctamente."
 
     def get_queryset(self):
-        return Incident.objects.filter(
+        return Device.objects.filter(
             zone__department__organization=self.get_organization(),
             deleted_at__isnull=True,
         )
@@ -137,21 +132,21 @@ class IncidentUpdateView(
         return kwargs
 
 
-class IncidentDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    permission_required = "incidents.delete_incident"
+class DeviceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    permission_required = "devices.delete_device"
     raise_exception = True
-    model = Incident
-    success_url = reverse_lazy("incidents:incident_list")
-    success_message = "Incidencia archivada correctamente."
+    model = Device
+    success_url = reverse_lazy("devices:device_list")
+    success_message = "Dispositivo archivado correctamente."
 
     def get(self, request, *args, **kwargs):
-        return redirect("incidents:incident_list")
+        return redirect("devices:device_list")
 
     def get_queryset(self):
         profile = getattr(self.request.user, "profile", None)
         if profile is None:
             raise PermissionDenied("La cuenta no posee un perfil habilitado.")
-        return Incident.objects.filter(
+        return Device.objects.filter(
             zone__department__organization=profile.organization,
             deleted_at__isnull=True,
         )

@@ -2,12 +2,12 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from organizations.models import Zone
-from .models import Incidencia
+from .models import Incident
 
 
-class IncidenciaForm(forms.ModelForm):
+class IncidentForm(forms.ModelForm):
     class Meta:
-        model = Incidencia
+        model = Incident
         fields = ["zone", "title", "description", "status", "evidence"]
         widgets = {
             "zone": forms.Select(attrs={"class": "form-select"}),
@@ -28,4 +28,3 @@ class IncidenciaForm(forms.ModelForm):
         if len(title) < 5:
             raise ValidationError("Ingrese al menos 5 caracteres.")
         return title
-

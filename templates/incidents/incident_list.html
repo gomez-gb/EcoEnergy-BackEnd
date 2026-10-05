@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Incidencias — {{ organization }}</h1>
+
+{% if perms.incidents.add_incident %}
+<p>
+    <a href="{% url 'incidents:incident_create' %}" class="btn btn-primary">Nueva incidencia</a>
+</p>
+{% endif %}
+
+<div class="mb-3">
+    Tamaño de página:
+    <a href="?page_size=5" class="btn btn-sm btn-outline-secondary {% if page_size == 5 %}active{% endif %}">5</a>
+    <a href="?page_size=15" class="btn btn-sm btn-outline-secondary {% if page_size == 15 %}active{% endif %}">15</a>
+    <a href="?page_size=30" class="btn btn-sm btn-outline-secondary {% if page_size == 30 %}active{% endif %}">30</a>
+</div>
+
+<table class="table table-responsive">
+    <thead>
+        <tr>
+            <th>Zona</th>
+            <th>Título</th>
+            <th>Reportado por</th>
+            <th>Estado</th>
+            <th>Evidencia</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for i in incidencias %}
+        <tr>
+            <td>{{ i.zone }}</td>
+            <td>{{ i.title }}</td>
+            <td>{{ i.reported_by }}</td>
+            <td>{{ i.get_status_display }}</td>
+            <td>
+                {% if i.evidence %}
+                <img src="{{ i.evidence.url }}" alt="Evidencia de {{ i.title }}" width="50" class="img-fluid rounded">
+                {% else %}
+                <span class="text-muted">Sin imagen</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if perms.incidents.change_incident %}
+                <a href="{% url 'incidents:incident_update' i.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
+                {% endif %}
+                {% if perms.incidents.delete_incident %}
+                <form id="delete-{{ i.pk }}" method="post"
+                    action="{% url 'incidents:incident_delete' i.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger js-delete">Eliminar</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6">No hay incidencias registradas.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav>
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% if form %}
+{% include "incidents/_incident_form_modal.html" %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll(".js-delete").forEach(button => {
+    button.addEventListener("click", async (event) => {
+        if (!window.Swal) {
+            if (!window.confirm("¿Eliminar la incidencia?")) {
+                event.preventDefault();
+            }
+            return;
+        }
+        event.preventDefault();
+        const result = await Swal.fire({
+            title: "¿Eliminar la incidencia?",
+            text: "Esta acción la archiva y deja de aparecer en el listado.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Eliminar",
+            cancelButtonText: "Cancelar",
+        });
+        if (result.isConfirmed) {
+            button.form.requestSubmit();
+        }
+    });
+});
+</script>
+{% endblock %}
