@@ -33,7 +33,7 @@
             <ul class="navbar-nav">
                 {% if user.is_authenticated %}
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'dashboard:dashboard' %}">Dashboard</a>
+                    <a class="nav-link" href="{% url 'dashboard:dashboard' %}">Inicio</a>
                 </li>
                 {% if perms.organizations.view_department %}
                 <li class="nav-item">
