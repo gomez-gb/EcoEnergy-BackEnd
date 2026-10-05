@@ -8,4 +8,5 @@ urlpatterns = [
     path("new/", views.IncidentCreateView.as_view(), name="incident_create"),
     path("<int:pk>/edit/", views.IncidentUpdateView.as_view(), name="incident_update"),
     path("<int:pk>/delete/", views.IncidentDeleteView.as_view(), name="incident_delete"),
+    path("exportar/", views.export_incidents_xlsx, name="incident_export"),
 ]

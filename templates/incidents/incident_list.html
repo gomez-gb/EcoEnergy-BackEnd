@@ -2,11 +2,12 @@
 {% block content %}
 <h1>Incidencias — {{ organization }}</h1>
 
-{% if perms.incidents.add_incident %}
 <p>
+    {% if perms.incidents.add_incident %}
     <a href="{% url 'incidents:incident_create' %}" class="btn btn-primary">Nueva incidencia</a>
+    {% endif %}
+    <a href="{% url 'incidents:incident_export' %}" class="btn btn-outline-success">Exportar a Excel</a>
 </p>
-{% endif %}
 
 <div class="mb-3">
     Tamaño de página:

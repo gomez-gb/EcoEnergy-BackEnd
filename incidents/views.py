@@ -1,3 +1,6 @@
+from urllib.parse import quote
+
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.exceptions import PermissionDenied
@@ -7,9 +10,11 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from .forms import IncidentForm
 from .models import Incident
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.utils import timezone
 from django.contrib import messages
+from openpyxl import Workbook
+from openpyxl.styles import Font
 
 
 ALLOWED_PAGE_SIZES = {5, 15, 30}
@@ -179,3 +184,59 @@ class IncidentDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView
         self.object.save(update_fields=["deleted_at"])
         messages.success(self.request, self.success_message)
         return HttpResponseRedirect(success_url)
+
+
+@login_required
+@permission_required("incidents.view_incident", raise_exception=True)
+def export_incidents_xlsx(request):
+    """Exporta las incidencias de la organización del usuario a un .xlsx real
+    (no un CSV disfrazado) — reutiliza el MISMO queryset scopeado y filtrado
+    por borrado lógico que IncidentListView, así la exportación nunca puede
+    mostrar más datos de los que el usuario vería en el listado."""
+    profile = getattr(request.user, "profile", None)
+    if profile is None:
+        raise PermissionDenied("La cuenta no posee un perfil habilitado.")
+
+    incidencias = (
+        Incident.objects
+        .filter(zone__department__organization=profile.organization, deleted_at__isnull=True)
+        .select_related("zone", "reported_by")
+        .order_by("-created_at")
+    )
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Incidencias"
+
+    headers = ["Zona", "Título", "Descripción", "Reportado por", "Estado", "Fecha de creación"]
+    sheet.append(headers)
+    for cell in sheet[1]:
+        cell.font = Font(bold=True)
+
+    for incidencia in incidencias:
+        sheet.append([
+            incidencia.zone.name,
+            incidencia.title,
+            incidencia.description,
+            incidencia.reported_by.user.username,
+            incidencia.get_status_display(),
+            timezone.localtime(incidencia.created_at).strftime("%Y-%m-%d %H:%M"),
+        ])
+
+    for column_cells in sheet.columns:
+        length = max(len(str(cell.value)) for cell in column_cells)
+        sheet.column_dimensions[column_cells[0].column_letter].width = min(length + 2, 50)
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    filename = f"incidencias_{profile.organization.commercial_name}_{timezone.localdate():%Y%m%d}.xlsx"
+    # Los headers HTTP no aceptan tildes/ñ directo (ej. "Organización") — hay
+    # que mandar un nombre ASCII de respaldo + la versión real codificada
+    # (RFC 5987) para que los navegadores modernos la muestren bien.
+    ascii_filename = filename.encode("ascii", "ignore").decode("ascii") or "incidencias.xlsx"
+    response["Content-Disposition"] = (
+        f'attachment; filename="{ascii_filename}"; filename*=UTF-8\'\'{quote(filename)}'
+    )
+    workbook.save(response)
+    return response
