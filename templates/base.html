@@ -7,6 +7,19 @@
     <meta charset="utf-8">
     <title>{% block title %}EcoEnergy{% endblock %}</title>
     {% bootstrap_css %}
+    <script>
+        // Chrome/Edge modernos ignoran Cache-Control: no-store para decidir si
+        // guardan la página en el bfcache (la "foto" del botón Atrás) — desde
+        // hace un par de años, el header ya no alcanza por sí solo. Esto detecta
+        // cuando una página se restauró desde esa foto (event.persisted) y
+        // fuerza una recarga real contra el servidor, para que Atrás siempre
+        // refleje la sesión/permisos actuales, no un estado congelado.
+        window.addEventListener("pageshow", function (event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
 </head>
 
 <body>
