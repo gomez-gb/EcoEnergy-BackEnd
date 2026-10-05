@@ -15,11 +15,11 @@ class Incident(BaseModel):
     ]
 
     zone = models.ForeignKey(
-        "organizations.Zone", on_delete=models.PROTECT, related_name="incidencias",
+        "organizations.Zone", on_delete=models.PROTECT, related_name="incidents",
         verbose_name="Zona",
     )
     reported_by = models.ForeignKey(
-        "accounts.UserProfile", on_delete=models.PROTECT, related_name="incidencias_reportadas",
+        "accounts.UserProfile", on_delete=models.PROTECT, related_name="reported_incidents",
         verbose_name="Reportado por",
     )
     title = models.CharField(max_length=150, verbose_name="Título")
@@ -50,9 +50,9 @@ class Incident(BaseModel):
 
 
 class IncidentFollowUp(BaseModel):
-    incident = models.ForeignKey(Incident, on_delete=models.CASCADE, related_name="seguimientos")
+    incident = models.ForeignKey(Incident, on_delete=models.CASCADE, related_name="followups")
     author = models.ForeignKey(
-        "accounts.UserProfile", on_delete=models.PROTECT, related_name="seguimientos_realizados",
+        "accounts.UserProfile", on_delete=models.PROTECT, related_name="authored_followups",
     )
     note = models.TextField()
 

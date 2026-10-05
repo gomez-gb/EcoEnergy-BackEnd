@@ -28,7 +28,7 @@ class DepartmentListView(LoginRequiredMixin, PermissionRequiredMixin, Organizati
         return (
             Department.objects
             .filter(organization=self.get_organization(), deleted_at__isnull=True)
-            .select_related("jefatura")
+            .select_related("head")
             .order_by("name")
         )
 

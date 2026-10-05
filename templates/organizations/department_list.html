@@ -16,7 +16,7 @@
         {% for d in departments %}
         <tr>
             <td>{{ d.name }}</td>
-            <td>{{ d.jefatura|default:"—" }}</td>
+            <td>{{ d.head|default:"—" }}</td>
             <td>{{ d.description }}</td>
             <td>{{ d.is_active|yesno:"Sí,No" }}</td>
         </tr>

@@ -17,18 +17,21 @@ class Organization(BaseModel):
 class Department(BaseModel):
 
     organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="departments")
-    jefatura = models.ForeignKey("accounts.UserProfile", on_delete=models.SET_NULL, null=True, blank=True, related_name="departments_led")
+    head = models.ForeignKey(
+        "accounts.UserProfile", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="departments_led", verbose_name="Jefatura",
+    )
     name = models.CharField(max_length=150)
     description = models.TextField()
     is_active = models.BooleanField(default=True)
 
     def clean(self):
         super().clean()
-        if self.jefatura_id:
-            if self.jefatura.organization_id != self.organization_id:
-                raise ValidationError({"jefatura": "La jefatura debe pertenecer a la misma organización del departamento."})
-            if not self.jefatura.user.is_active:
-                raise ValidationError({"jefatura": "La jefatura debe ser un usuario activo."})
+        if self.head_id:
+            if self.head.organization_id != self.organization_id:
+                raise ValidationError({"head": "La jefatura debe pertenecer a la misma organización del departamento."})
+            if not self.head.user.is_active:
+                raise ValidationError({"head": "La jefatura debe ser un usuario activo."})
 
     def __str__(self):
         return self.name

@@ -35,10 +35,10 @@ class OrganizationAdmin(admin.ModelAdmin):
 
 @admin.register(Department, site=ecoenergy_admin_site)
 class DepartmentAdmin(admin.ModelAdmin):
-    list_display = ("name", "organization", "jefatura", "is_active")
+    list_display = ("name", "organization", "head", "is_active")
     search_fields = ("name", "organization__commercial_name")
     list_filter = ("organization", "is_active")
-    list_select_related = ("organization", "jefatura")
+    list_select_related = ("organization", "head")
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -55,7 +55,7 @@ class DepartmentAdmin(admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         organization = get_user_organization(request)
-        if organization is not None and db_field.name == "jefatura":
+        if organization is not None and db_field.name == "head":
             kwargs["queryset"] = UserProfile.objects.filter(organization=organization)
         if organization is not None and db_field.name == "organization":
             kwargs["queryset"] = Organization.objects.filter(pk=organization.pk)
