@@ -21,11 +21,9 @@ from django.views.generic import RedirectView
 from core.admin_site import ecoenergy_admin_site
 
 urlpatterns = [
-    # Intercepta el login propio del Admin de Django ANTES de que admin.site.urls
-    # lo registre — así cualquiera que caiga sin sesión en /admin/ va al login
-    # principal de la app (con el mismo ?next= preservado), no a un formulario
-    # de login distinto y con otro estilo.
-    path("admin/login/", RedirectView.as_view(pattern_name="login", query_string=True)),
+    # EcoEnergyAdminSite.login() (core/admin_site.py) decide a dónde mandar a
+    # quien no tiene permiso para /admin/ — al login principal si es anónimo,
+    # al Dashboard con un aviso si ya tiene sesión iniciada pero no es superusuario.
     path('admin/', ecoenergy_admin_site.urls),
     path("", RedirectView.as_view(pattern_name="dashboard:dashboard", permanent=False)),
     path("accounts/", include("django.contrib.auth.urls")),
