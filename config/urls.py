@@ -18,14 +18,16 @@ from django.contrib import admin
 from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("", include("dispositivos.urls")),
+    path("", RedirectView.as_view(pattern_name="dashboard:dashboard", permanent=False)),
     path("accounts/", include("django.contrib.auth.urls")),
     path("dashboard/", include("dashboard.urls")),
     path("incidencias/", include("incidents.urls")),
-    path("dispositivos-admin/", include("devices.urls")),
+    path("dispositivos/", include("devices.urls")),
+    path("organizacion/", include("organizations.urls")),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

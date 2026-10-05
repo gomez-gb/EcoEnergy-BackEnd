@@ -1,6 +1,51 @@
 {% extends "base.html" %}
 {% block content %}
+
+{% if es_admin_central %}
+<h1>Panel del administrador central</h1>
+<p class="text-muted">Vista resumen de TODAS las organizaciones. Para crear, editar o administrar cualquier dato, usa el <a href="{% url 'admin:index' %}">Panel de Administración</a>.</p>
+
+<div class="row row-cols-1 row-cols-md-4 g-3 mb-4">
+    <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">{{ total_organizaciones }}</h5><p class="card-text">Organizaciones</p></div></div></div>
+    <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">{{ total_zonas }}</h5><p class="card-text">Zonas</p></div></div></div>
+    <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">{{ total_dispositivos }}</h5><p class="card-text">Dispositivos</p></div></div></div>
+    <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">{{ total_incidencias_abiertas }}</h5><p class="card-text">Incidencias abiertas</p></div></div></div>
+</div>
+
+<a href="{% url 'admin:index' %}" class="btn btn-primary">Ir al Panel de Administración</a>
+
+{% else %}
 <h1>Dashboard — {{ organization }}</h1>
-<p><a class="btn btn-primary" href="{% url 'incidents:incident_list' %}">Ver incidencias</a></p>
-<p><a class="btn btn-primary" href="{% url 'devices:device_list' %}">Ver dispositivos</a></p>
+
+<div class="row row-cols-1 row-cols-md-4 g-3 mb-4">
+    <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">{{ total_departamentos }}</h5><p class="card-text">Departamentos</p></div></div></div>
+    <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">{{ total_zonas }}</h5><p class="card-text">Zonas</p></div></div></div>
+    <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">{{ total_dispositivos }}</h5><p class="card-text">Dispositivos</p></div></div></div>
+    <div class="col"><div class="card text-center"><div class="card-body"><h5 class="card-title">{{ total_incidencias_abiertas }}</h5><p class="card-text">Incidencias abiertas</p></div></div></div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 g-3">
+    {% if perms.organizations.view_department %}
+    <div class="col">
+        <a href="{% url 'organizations:department_list' %}" class="btn btn-outline-primary w-100 py-3">Ver Departamentos</a>
+    </div>
+    {% endif %}
+    {% if perms.organizations.view_zone %}
+    <div class="col">
+        <a href="{% url 'organizations:zone_list' %}" class="btn btn-outline-primary w-100 py-3">Ver Zonas</a>
+    </div>
+    {% endif %}
+    {% if perms.devices.view_device %}
+    <div class="col">
+        <a href="{% url 'devices:device_list' %}" class="btn btn-outline-primary w-100 py-3">Ver Dispositivos</a>
+    </div>
+    {% endif %}
+    {% if perms.incidents.view_incident %}
+    <div class="col">
+        <a href="{% url 'incidents:incident_list' %}" class="btn btn-outline-primary w-100 py-3">Ver Incidencias</a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
 {% endblock %}
