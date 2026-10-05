@@ -32,6 +32,26 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
                 {% if user.is_authenticated %}
+                {% if perms.organizations.view_department %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'organizations:department_list' %}">Departamentos</a>
+                </li>
+                {% endif %}
+                {% if perms.organizations.view_zone %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'organizations:zone_list' %}">Zonas</a>
+                </li>
+                {% endif %}
+                {% if perms.devices.view_device %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'devices:device_list' %}">Dispositivos</a>
+                </li>
+                {% endif %}
+                {% if perms.incidents.view_incident %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'incidents:incident_list' %}">Incidencias</a>
+                </li>
+                {% endif %}
                 {% if user.is_superuser %}
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'admin:index' %}">Panel de Administración</a>
