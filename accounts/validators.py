@@ -3,19 +3,15 @@ from django.core.exceptions import ValidationError
 
 
 class ComplexPasswordValidator:
-    """Exige longitud mínima 10 + mayúscula + minúscula + número + carácter
-    especial — especificación concreta de la Evaluación Formativa U2 para la
-    contraseña nueva en el flujo de recuperación. Se registra en
-    AUTH_PASSWORD_VALIDATORS para aplicar en todo el proyecto, no solo ahí."""
+    """Exige mayúscula + minúscula + número + carácter especial —
+    especificación concreta de la Evaluación Formativa U2 para la contraseña
+    nueva en el flujo de recuperación. La longitud mínima (10) la controla
+    MinimumLengthValidator (ver AUTH_PASSWORD_VALIDATORS) — este validador no
+    la repite, para no mostrar el mismo error de "muy corta" dos veces."""
 
-    MIN_LENGTH = 10
+    MIN_LENGTH = 10  # Solo para el texto de ayuda — no se valida acá.
 
     def validate(self, password, user=None):
-        if len(password) < self.MIN_LENGTH:
-            raise ValidationError(
-                f"La contraseña debe tener al menos {self.MIN_LENGTH} caracteres.",
-                code="password_too_short_complex",
-            )
         if not re.search(r"[A-Z]", password):
             raise ValidationError(
                 "La contraseña debe incluir al menos una letra mayúscula.",
