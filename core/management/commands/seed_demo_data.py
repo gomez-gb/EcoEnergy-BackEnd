@@ -48,9 +48,9 @@ class Command(BaseCommand):
                 ("Mantenimiento", "Planta Norte", "Planta"),
             ],
             usuarios=[
-                ("admin_org", "Administrador de Organización", "11111111-1", "+56911111111", "Calle Falsa 123", "EMP-ADM-01"),
-                ("operador1", "Operador", "22222222-2", "+56922222222", "Calle Falsa 456", "EMP-002"),
-                ("consulta1", "Consulta", "33333333-3", "+56933333333", "Calle Falsa 789", "EMP-003"),
+                ("admin_org", "Administrador de Organización", "11111111-1", "+56911111111", "Calle Falsa 123", "EMP-ADM-01", "admin_org@norte.test"),
+                ("operador1", "Operador", "22222222-2", "+56922222222", "Calle Falsa 456", "EMP-002", "operador1@norte.test"),
+                ("consulta1", "Consulta", "33333333-3", "+56933333333", "Calle Falsa 789", "EMP-003", "consulta1@norte.test"),
             ],
         )
         org_sur = self.crear_organizacion_con_usuarios(
@@ -61,9 +61,9 @@ class Command(BaseCommand):
                 ("Logística", "Planta Sur", "Planta"),
             ],
             usuarios=[
-                ("admin_sur", "Administrador de Organización", "44444444-4", "+56944444444", "Av. Siempreviva 742", "EMP-ADM-02"),
-                ("operador2", "Operador", "55555555-5", "+56955555555", "Av. Siempreviva 743", "EMP-004"),
-                ("consulta2", "Consulta", "66666666-6", "+56966666666", "Av. Siempreviva 744", "EMP-005"),
+                ("admin_sur", "Administrador de Organización", "44444444-4", "+56944444444", "Av. Siempreviva 742", "EMP-ADM-02", "admin_sur@sur.test"),
+                ("operador2", "Operador", "55555555-5", "+56955555555", "Av. Siempreviva 743", "EMP-004", "operador2@sur.test"),
+                ("consulta2", "Consulta", "66666666-6", "+56966666666", "Av. Siempreviva 744", "EMP-005", "consulta2@sur.test"),
             ],
         )
         random.seed(42)
@@ -161,7 +161,7 @@ class Command(BaseCommand):
 
         departamento_principal = zonas[0].department
         perfiles = []
-        for username, nombre_grupo, rut, phone, address, employee_code in usuarios:
+        for username, nombre_grupo, rut, phone, address, employee_code, email in usuarios:
             grupo = Group.objects.get(name=nombre_grupo)
             user, created = User.objects.get_or_create(username=username)
             if created:
@@ -170,6 +170,7 @@ class Command(BaseCommand):
             # (superusuario) — estos roles de organización nunca deben entrar ahí.
             if user.is_staff:
                 user.is_staff = False
+            user.email = email
             user.save()
             user.groups.add(grupo)
             perfil, _ = UserProfile.objects.get_or_create(

@@ -23,3 +23,18 @@ class UserProfile(BaseModel):
 
     def __str__(self):
         return self.user.username
+
+
+class PasswordResetCode(BaseModel):
+    """Código temporal de 6 dígitos para recuperación de contraseña (Clase 6,
+    actividad complementaria). El código en sí NUNCA se guarda — solo su hash
+    (`code_hash`, vía `make_password`) — y se valida con `check_password`."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="password_reset_codes")
+    code_hash = models.CharField(max_length=255)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+    failed_attempts = models.PositiveSmallIntegerField(default=0)
+
+    def __str__(self):
+        return f"Código de recuperación para {self.user.username} (creado {self.created_at:%Y-%m-%d %H:%M})"

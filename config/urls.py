@@ -31,6 +31,7 @@ urlpatterns = [
     # que tome precedencia sobre el login genérico de django.contrib.auth.urls.
     path("accounts/login/", AppLoginView.as_view(), name="login"),
     path("accounts/", include("django.contrib.auth.urls")),
+    path("accounts/", include("accounts.urls")),
     path("dashboard/", include("dashboard.urls")),
     path("incidencias/", include("incidents.urls")),
     path("dispositivos/", include("devices.urls")),
