@@ -51,6 +51,23 @@ class IncidentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         self.page_size = page_size
         return page_size
 
+    def paginate_queryset(self, queryset, page_size):
+        """Si la página pedida ya no existe (ej. se cambió el tamaño de página
+        y el total de páginas bajó, o se volvió con el botón Atrás a una URL
+        vieja), usar la página válida más cercana en vez de romper con un 404
+        — mismo patrón en DeviceListView."""
+        paginator = self.get_paginator(
+            queryset, page_size, orphans=self.get_paginate_orphans(),
+            allow_empty_first_page=self.get_allow_empty(),
+        )
+        try:
+            page_number = int(self.request.GET.get(self.page_kwarg) or 1)
+        except (TypeError, ValueError):
+            page_number = 1
+        page_number = max(1, min(page_number, paginator.num_pages or 1))
+        page = paginator.page(page_number)
+        return (paginator, page, page.object_list, page.has_other_pages())
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["organization"] = self.get_organization()
