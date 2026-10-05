@@ -32,6 +32,8 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
                 {% if user.is_authenticated %}
+                {% url 'dashboard:dashboard' as inicio_url %}
+                {% if request.path != inicio_url %}
                 {% if perms.organizations.view_department %}
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'organizations:department_list' %}">Departamentos</a>
@@ -51,6 +53,7 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'incidents:incident_list' %}">Incidencias</a>
                 </li>
+                {% endif %}
                 {% endif %}
                 {% if user.is_superuser %}
                 <li class="nav-item">
