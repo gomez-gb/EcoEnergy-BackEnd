@@ -1,4 +1,3 @@
-from django.contrib import messages
 from django.contrib.admin import AdminSite
 from django.contrib.auth.views import redirect_to_login
 from django.shortcuts import redirect
@@ -25,13 +24,9 @@ class EcoEnergyAdminSite(AdminSite):
         hay sesión iniciada como si no. Sin esto, alguien ya logueado (pero sin
         ser superusuario) quedaba viendo el formulario de login de nuevo —
         confuso, porque el navbar de arriba igual muestra su sesión activa.
-        Ahora: si ya tiene sesión, directo al Dashboard con el motivo explicado;
+        Ahora: si ya tiene sesión, directo al Dashboard (sin acceso, sin más);
         si no tiene sesión, al login principal de la app (no al de Django)."""
         if request.user.is_authenticated:
-            messages.error(
-                request,
-                "Tu cuenta no tiene acceso al Panel de Administración — es exclusivo del administrador central de EcoEnergy.",
-            )
             return redirect("dashboard:dashboard")
         # Django ya redirigió aquí agregando ?next=<destino original> (p.ej.
         # /admin/) antes de llamar a este método — hay que reenviar ESE destino,
