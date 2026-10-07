@@ -1,8 +1,8 @@
 # EcoEnergy - Backend
 
-Backend del proyecto **EcoEnergy**, desarrollado con **Python y Django**, con conexión a **PostgreSQL**. Modela la estructura de una organización cliente (organizaciones, departamentos, zonas), sus usuarios (perfiles con rol/departamento) y la gestión de incidencias operativas sobre esas zonas, todo administrado desde el Django Admin con scoping por organización (cada usuario no-superusuario solo ve y edita los datos de su propia organización).
+Backend del proyecto **EcoEnergy**, desarrollado con **Python y Django**, con conexión a **PostgreSQL**. Modela la estructura de una organización cliente (organizaciones, departamentos, zonas), sus usuarios (perfiles con rol/departamento), un catálogo de dispositivos con lecturas de consumo y mantenimientos, y la gestión de incidencias operativas — con scoping por organización en toda la aplicación (cada usuario no-superusuario solo ve y edita los datos de su propia organización) y recuperación de contraseña por código temporal.
 
-Este documento cubre la puesta en marcha completa del proyecto desde cero. Fue verificado clonando el repositorio en una carpeta aparte, con un entorno virtual y una base de datos PostgreSQL nuevos, siguiendo estos mismos pasos.
+Este documento cubre la puesta en marcha completa del proyecto desde cero.
 
 ### Arranque rápido con Docker (recomendado)
 
@@ -64,7 +64,7 @@ Con el entorno virtual activado:
 pip install -r requirements.txt
 ```
 
-Esto instala Django, `psycopg2-binary` (driver de PostgreSQL), `python-dotenv` (carga de variables de entorno desde `.env`) y `django-bootstrap5` (usado por el módulo legacy `dispositivos`, ver más abajo).
+Esto instala Django, `psycopg2-binary` (driver de PostgreSQL), `python-dotenv` (carga de variables de entorno desde `.env`), `django-bootstrap5` (estilos de formularios/templates), `pillow` (validación real de imágenes subidas) y `openpyxl` (exportación a Excel).
 
 ## 4. Crear la base de datos y el usuario en PostgreSQL
 
@@ -93,7 +93,7 @@ Copia el archivo de ejemplo y complétalo con los datos reales que usaste en el 
 cp .env.example .env
 ```
 
-`.env` debe quedar con esta forma (los valores son ejemplos, no los reutilices tal cual):
+`.env` debe quedar con esta forma como mínimo (los valores son ejemplos, no los reutilices tal cual):
 
 ```
 DB_NAME=ecoenergy_db
@@ -106,10 +106,13 @@ DJANGO_SECRET_KEY=una-clave-larga-y-aleatoria-solo-para-tu-entorno
 
 `.env` está en `.gitignore` y nunca debe subirse al repositorio; `.env.example` sí se versiona, como plantilla sin datos reales.
 
-Variables adicionales que también acepta `.env` (ya vienen con un valor por defecto seguro si no se definen):
+Variables adicionales que también acepta `.env` (ya vienen con un valor por defecto seguro/funcional si no se definen):
 
 - `COOKIE_SECURE` — controla la flag `Secure` de las cookies de sesión.
 - `DJANGO_DEBUG` — controla `DEBUG` de Django.
+- `EMAIL_BACKEND`/`EMAIL_HOST`/`EMAIL_PORT`/`EMAIL_HOST_USER`/`EMAIL_HOST_PASSWORD`/`EMAIL_USE_TLS`/`DEFAULT_FROM_EMAIL` — envío del correo de recuperación de contraseña. Sin configurar, usa el backend de consola (el correo se imprime en la terminal del servidor, no se envía de verdad) — útil para desarrollo. Con credenciales SMTP reales (por ejemplo Mailtrap) se envía como correo real.
+- `PASSWORD_RESET_CODE_TTL` — segundos de vigencia del código de recuperación (por defecto 120).
+- `PASSWORD_RESET_MAX_ATTEMPTS` — intentos fallidos permitidos antes de bloquear un código (por defecto 5).
 
 ## 6. Aplicar las migraciones
 
@@ -117,7 +120,7 @@ Variables adicionales que también acepta `.env` (ya vienen con un valor por def
 python manage.py migrate
 ```
 
-Esto crea todas las tablas del proyecto (`organizations`, `accounts`, `incidents`, más las de Django: `auth`, `admin`, `contenttypes`, `sessions`).
+Esto crea todas las tablas del proyecto (`organizations`, `accounts`, `incidents`, `devices`, más las de Django: `auth`, `admin`, `contenttypes`, `sessions`).
 
 ## 7. Cargar datos de prueba
 
@@ -125,29 +128,39 @@ Esto crea todas las tablas del proyecto (`organizations`, `accounts`, `incidents
 python manage.py seed_demo_data
 ```
 
-Es idempotente (usa `get_or_create` en todo), así que se puede correr más de una vez sin duplicar datos ni fallar si ya existen. Crea:
+Es idempotente (usa `get_or_create`/regeneración controlada en todo), así que se puede correr más de una vez sin duplicar datos de catálogo ni fallar si ya existen. Crea:
 
 **3 grupos con permisos distintos** (Groups/Permissions de Django, scopeados por app/modelo):
 
 | Grupo | Puede |
 |---|---|
-| `Administrador de Organización` | Ver/editar Organization, Department, Zone, UserProfile e Incidencia/Seguimiento de su organización; borrar Department y Zone |
-| `Operador` | Ver zonas, crear y editar Incidencias y sus seguimientos |
-| `Consulta` | Solo lectura (`view_*`) sobre todo lo anterior |
+| `Administrador de Organización` | CRUD completo (salvo borrado físico) sobre Organization/Department/Zone/UserProfile/Incident/IncidentFollowUp/Device/DeviceCategory/DeviceReading/MaintenanceLog de su organización |
+| `Operador` | Ver zonas y dispositivos; crear/editar incidencias y sus seguimientos; crear lecturas de consumo y registros de mantenimiento |
+| `Consulta` | Solo lectura (`view_*`) sobre todo lo anterior, incluida la exportación a Excel de incidencias |
 
-**1 organización de prueba** ("Organización Norte", con un departamento "Operaciones" y una zona "Bodega Norte").
+**2 organizaciones de prueba completas**, cada una con 2 departamentos y 2 zonas:
 
-**3 usuarios de prueba**, todos con contraseña **`Test1234!`**, staff (pueden entrar a `/admin/`) pero **no superusuarios** (quedan scopeados a "Organización Norte", que es justamente lo que permite probar el scoping por organización en vivo):
-
-| Usuario | Grupo asignado |
+| Organización | Departamentos / Zonas |
 |---|---|
-| `admin_org` | Administrador de Organización |
-| `operador1` | Operador |
-| `consulta1` | Consulta |
+| Organización Norte | Operaciones → Bodega Norte · Mantenimiento → Planta Norte |
+| Organización Sur | Mantenimiento → Bodega Sur · Logística → Planta Sur |
 
-## 8. Crear tu propio superusuario (opcional pero recomendado)
+**6 usuarios de prueba** (3 por organización, mismos 3 roles), todos con contraseña **`Test1234!`**. Ninguno es `is_staff` — el Django Admin (`/admin/`) es exclusivo del administrador central (superusuario), estos 6 usuarios viven en las páginas propias de la app:
 
-Un superusuario ve **todas** las organizaciones sin restricción de scoping, útil para administrar el sistema completo:
+| Usuario | Organización | Grupo asignado |
+|---|---|---|
+| `admin_org` | Norte | Administrador de Organización |
+| `operador1` | Norte | Operador |
+| `consulta1` | Norte | Consulta |
+| `admin_sur` | Sur | Administrador de Organización |
+| `operador2` | Sur | Operador |
+| `consulta2` | Sur | Consulta |
+
+Además crea un catálogo de 3 categorías de dispositivo, 8 dispositivos (4 por organización) y más de 1.000 registros operativos repartidos entre lecturas de consumo, mantenimientos, incidencias y seguimientos — reproducible corriendo el comando de nuevo.
+
+## 8. Crear tu propio superusuario (recomendado)
+
+El superusuario es el **administrador central de EcoEnergy**: es el único rol que entra a `/admin/`, y ve/administra **todas** las organizaciones sin restricción de scoping.
 
 ```bash
 python manage.py createsuperuser
@@ -159,18 +172,19 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-- `http://127.0.0.1:8000/admin/` — Django Admin. Entra con tu superusuario o con cualquiera de los 3 usuarios de prueba (`admin_org` / `operador1` / `consulta1`, contraseña `Test1234!`) para ver el scoping por organización en acción.
-- `http://127.0.0.1:8000/` — módulo `dispositivos` (ver más abajo).
+- `http://127.0.0.1:8000/` — redirige a `/dashboard/` (requiere sesión iniciada; si no hay sesión, redirige a su vez al login).
+- `http://127.0.0.1:8000/accounts/login/` — login. Incluye el link "¿Olvidaste tu contraseña?" (recuperación por código de 6 dígitos). Con tu superusuario, el login te manda directo a `/admin/`; con cualquiera de los 6 usuarios de prueba te manda al Dashboard de su organización.
+- `http://127.0.0.1:8000/admin/` — Django Admin, exclusivo del superusuario (cualquier otro usuario autenticado que intente entrar es redirigido al Dashboard sin más).
 
 ## Módulos del proyecto
 
-- **`core`** — `BaseModel` abstracto (`created_at`, `updated_at`, `deleted_at`, este último usado para soft-delete de Zonas) y `core/admin_utils.get_user_organization`, la función que resuelve la organización del usuario logueado y que usan todos los `ModelAdmin` del proyecto para hacer scoping. También vive aquí el management command `seed_demo_data`.
-- **`organizations`** — `Organization` → `Department` → `Zone`, la jerarquía estructural de una organización cliente. `Department` valida en `clean()` que su jefatura pertenezca a la misma organización y sea un usuario activo. El Admin de `Zone` incluye la acción personalizada "Archivar zonas seleccionadas" (soft-delete vía `deleted_at`, sin borrado real).
-- **`accounts`** — `UserProfile`, que extiende `auth.User` (uno a uno) con organización, departamento, RUT, teléfono, dirección y código de empleado. Valida en `clean()` que su departamento pertenezca a su misma organización.
-- **`incidents`**: modelos `Incidencia`/`IncidenciaSeguimiento` con scoping por organización. CRUD web completo en `/incidencias/` (listado paginado, crear/editar vía modal, borrado lógico con confirmación SweetAlert2), con evidencia fotográfica opcional (`evidence`, validada por tamaño/extensión/contenido real). `IncidenciaSeguimiento` solo gestionable desde el Admin (Inline).
-- **`dashboard`**: punto de entrada tras el login (`LOGIN_REDIRECT_URL`), requiere sesión iniciada.
-- **`dispositivos`** — módulo previo (Unidad 1) sin relación con la base de datos PostgreSQL ni con los modelos anteriores: lee zonas/categorías/dispositivos de prueba desde JSON en `data/` y expone rutas de solo lectura (`/`, `/zonas/`, `/zonas/<id>/`) calculando consumo y estado en cada request. Detalle completo de esas rutas y relaciones en [ANALISIS.md](ANALISIS.md).
-- **Autenticación**: login y logout usan las vistas estándar de Django (`django.contrib.auth.urls`), montadas en `/accounts/login/` y `/accounts/logout/`.
+- **`core`** — `BaseModel` abstracto (`created_at`, `updated_at`, `deleted_at`, usado para soft-delete en todos los modelos de negocio) y `core/admin_utils.get_user_organization`, la función que resuelve la organización del usuario logueado y que usan todos los `ModelAdmin` del proyecto para hacer scoping. `core/admin_site.py` define `EcoEnergyAdminSite`, el Admin personalizado que exige `is_superuser` (no solo `is_staff`) para entrar — los roles de organización nunca acceden a `/admin/`. `core/middleware.py` agrega `Cache-Control: no-store` a toda respuesta. También vive aquí el management command `seed_demo_data`.
+- **`organizations`** — `Organization` → `Department` → `Zone`, la jerarquía estructural de una organización cliente. `Department` valida en `clean()` que su `head` (jefatura) pertenezca a la misma organización y sea un usuario activo. Listados de solo lectura de Departamentos/Zonas en `/organizacion/departamentos/` y `/organizacion/zonas/` (la creación/edición se gestiona desde el Admin). El Admin de `Zone` incluye la acción personalizada "Archivar zonas seleccionadas" (soft-delete vía `deleted_at`, sin borrado real).
+- **`accounts`** — `UserProfile`, que extiende `auth.User` (uno a uno) con organización, departamento, RUT, teléfono, dirección y código de empleado; valida en `clean()` que su departamento pertenezca a su misma organización. `PasswordResetCode` implementa la recuperación de contraseña: código numérico de 6 dígitos generado con el módulo `secrets` (no predecible), hasheado (nunca en texto plano), vigencia configurable, máximo de intentos fallidos, de un solo uso — flujo completo en `/accounts/password-reset/` → `/verify/` → `/confirm/`. `accounts/validators.ComplexPasswordValidator` exige mayúscula+minúscula+número+carácter especial en cualquier contraseña nueva del proyecto (registrado en `AUTH_PASSWORD_VALIDATORS`).
+- **`incidents`** — modelos `Incident`/`IncidentFollowUp` con scoping por organización. CRUD web completo en `/incidencias/` (listado paginado 5/15/30 persistido en sesión, crear/editar vía modal, borrado lógico con confirmación SweetAlert2), con evidencia fotográfica opcional (`evidence`, validada por tamaño/extensión/contenido real vía Pillow). Botón "Exportar a Excel" genera un `.xlsx` real con las incidencias activas de la organización del usuario. `IncidentFollowUp` solo gestionable desde el Admin (Inline).
+- **`devices`** — catálogo de dispositivos: `DeviceCategory` (categorías, catálogo compartido entre organizaciones), `Device` (dispositivos por zona, CRUD web completo en `/dispositivos/` con el mismo patrón que incidencias), `DeviceReading` (lecturas de consumo) y `MaintenanceLog` (registros de mantenimiento) — estos dos últimos solo gestionables desde el Admin por ahora.
+- **`dashboard`** — página de Inicio tras el login (`LOGIN_REDIRECT_URL`): tarjetas de resumen (departamentos/zonas/dispositivos/incidencias abiertas) + accesos directos a cada sección, condicionados por permiso real de cada usuario.
+- **Autenticación**: login/logout con las vistas de Django (`django.contrib.auth.urls`), con un `LoginView` propio (`accounts.views.AppLoginView`) que redirige a quien ya tiene sesión iniciada en vez de mostrarle el formulario de nuevo.
 
 ## Comandos de verificación
 

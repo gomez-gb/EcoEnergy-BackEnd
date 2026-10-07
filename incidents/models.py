@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from .validators import validate_evidence_file
 
 
-class Incidencia(BaseModel):
+class Incident(BaseModel):
     ESTADO_ABIERTA = "ABIERTA"
     ESTADO_EN_PROCESO = "EN_PROCESO"
     ESTADO_RESUELTA = "RESUELTA"
@@ -15,11 +15,11 @@ class Incidencia(BaseModel):
     ]
 
     zone = models.ForeignKey(
-        "organizations.Zone", on_delete=models.PROTECT, related_name="incidencias",
+        "organizations.Zone", on_delete=models.PROTECT, related_name="incidents",
         verbose_name="Zona",
     )
     reported_by = models.ForeignKey(
-        "accounts.UserProfile", on_delete=models.PROTECT, related_name="incidencias_reportadas",
+        "accounts.UserProfile", on_delete=models.PROTECT, related_name="reported_incidents",
         verbose_name="Reportado por",
     )
     title = models.CharField(max_length=150, verbose_name="Título")
@@ -31,6 +31,10 @@ class Incidencia(BaseModel):
         validators=[validate_evidence_file],
         verbose_name="Evidencia",
     )
+
+    class Meta:
+        verbose_name = "Incidencia"
+        verbose_name_plural = "Incidencias"
 
     def __str__(self):
         return f"{self.title} ({self.get_status_display()})"
@@ -45,22 +49,29 @@ class Incidencia(BaseModel):
 
 
 
-class IncidenciaSeguimiento(BaseModel):
-    incidencia = models.ForeignKey(Incidencia, on_delete=models.CASCADE, related_name="seguimientos")
-    author = models.ForeignKey(
-        "accounts.UserProfile", on_delete=models.PROTECT, related_name="seguimientos_realizados",
+class IncidentFollowUp(BaseModel):
+    incident = models.ForeignKey(
+        Incident, on_delete=models.CASCADE, related_name="followups",
+        verbose_name="Incidencia",
     )
-    note = models.TextField()
+    author = models.ForeignKey(
+        "accounts.UserProfile", on_delete=models.PROTECT, related_name="authored_followups",
+        verbose_name="Autor",
+    )
+    note = models.TextField(verbose_name="Nota")
+
+    class Meta:
+        verbose_name = "Seguimiento de incidencia"
+        verbose_name_plural = "Seguimientos de incidencia"
 
     def clean(self):
         super().clean()
-        if self.incidencia_id and self.author_id:
-            if self.author.organization_id != self.incidencia.zone.department.organization_id:
+        if self.incident_id and self.author_id:
+            if self.author.organization_id != self.incident.zone.department.organization_id:
                 raise ValidationError({
                     "author": "El autor del seguimiento debe pertenecer a la misma organización de la incidencia."
                 })
 
 
     def __str__(self):
-        return f"Seguimiento de {self.incidencia.title} por {self.author.user.username}"
-
+        return f"Seguimiento de {self.incident.title} por {self.author.user.username}"

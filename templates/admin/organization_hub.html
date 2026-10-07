@@ -1,0 +1,13 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">Inicio</a>
+&rsaquo; {{ organization.commercial_name }}
+</div>
+{% endblock %}
+
+{% block content %}
+<p>{{ organization.legal_name }} — {{ organization.contact_email }}</p>
+<p class="help">Usa el menú de la izquierda para navegar Departamentos, Zonas, Dispositivos, Incidencias y Cuentas de esta organización.</p>
+{% endblock %}
