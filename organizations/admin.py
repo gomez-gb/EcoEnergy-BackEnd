@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Organization, Department, Zone
-from core.admin_utils import get_user_organization
+from core.admin_utils import get_user_organization, require_organization_filter, OrganizationScopedAdminMixin
 from core.admin_site import ecoenergy_admin_site
 from accounts.models import UserProfile
 from django.utils import timezone
@@ -12,7 +12,7 @@ def archivar_zonas(modeladmin, request, queryset):
     modeladmin.message_user(request, f"{actualizadas} zona(s) archivada(s).")
 
 @admin.register(Organization, site=ecoenergy_admin_site)
-class OrganizationAdmin(admin.ModelAdmin):
+class OrganizationAdmin(OrganizationScopedAdminMixin, admin.ModelAdmin):
     list_display = ("commercial_name", "legal_name", "contact_email", "tax_id", "is_active")
     search_fields = ("commercial_name", "legal_name", "tax_id")
     list_filter = ("is_active",)
@@ -32,9 +32,12 @@ class OrganizationAdmin(admin.ModelAdmin):
         organization = get_user_organization(request)
         return obj.pk == organization.pk
 
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 
 @admin.register(Department, site=ecoenergy_admin_site)
-class DepartmentAdmin(admin.ModelAdmin):
+class DepartmentAdmin(OrganizationScopedAdminMixin, admin.ModelAdmin):
     list_display = ("name", "organization", "head", "is_active")
     search_fields = ("name", "organization__commercial_name")
     list_filter = ("organization", "is_active")
@@ -69,19 +72,26 @@ class DepartmentAdmin(admin.ModelAdmin):
         organization = get_user_organization(request)
         return obj.organization_id == organization.id
 
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 
 @admin.register(Zone, site=ecoenergy_admin_site)
-class ZoneAdmin(admin.ModelAdmin):
-    list_display = ("name", "department", "is_active")
+class ZoneAdmin(OrganizationScopedAdminMixin, admin.ModelAdmin):
+    list_display = ("name", "organization", "department", "is_active")
     search_fields = ("name", "department__name")
-    list_filter = ("department", "is_active")
-    list_select_related = ("department",)
+    list_filter = ("department__organization", "department", "is_active")
+    list_select_related = ("department__organization",)
+
+    @admin.display(description="Organización")
+    def organization(self, obj):
+        return obj.department.organization
 
     def get_queryset(self, request):
         qs = super().get_queryset(request).filter(deleted_at__isnull=True)
         organization = get_user_organization(request)
         if organization is None:
-            return qs
+            return require_organization_filter(qs, request, "department__organization")
         return qs.filter(department__organization=organization)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):

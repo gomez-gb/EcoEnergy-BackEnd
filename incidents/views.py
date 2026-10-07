@@ -8,6 +8,7 @@ from django.core.paginator import Paginator
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from core.views import OrganizationContextMixin, get_effective_organization
 from .forms import IncidentForm
 from .models import Incident
 from django.http import HttpResponse, HttpResponseRedirect
@@ -20,28 +21,20 @@ from openpyxl.styles import Font
 ALLOWED_PAGE_SIZES = {5, 15, 30}
 
 
-class IncidentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class IncidentListView(LoginRequiredMixin, PermissionRequiredMixin, OrganizationContextMixin, ListView):
     permission_required = "incidents.view_incident"
     raise_exception = True
     model = Incident
     template_name = "incidents/incident_list.html"
     context_object_name = "incidencias"
 
-    def get_organization(self):
-        profile = getattr(self.request.user, "profile", None)
-        if profile is None:
-            raise PermissionDenied("La cuenta no posee un perfil habilitado.")
-        return profile.organization
-
     def get_queryset(self):
-        organization = self.get_organization()
         return (
             Incident.objects
-            .filter(zone__department__organization=organization, deleted_at__isnull=True)
+            .filter(zone__department__organization=self.organization, deleted_at__isnull=True)
             .select_related("zone", "reported_by")
             .order_by("-created_at")
         )
-
 
     def get_paginate_by(self, queryset):
         raw_size = self.request.GET.get("page_size")
@@ -75,27 +68,17 @@ class IncidentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["organization"] = self.get_organization()
+        context["organization"] = self.organization
         context["page_size"] = self.page_size
         return context
 
 
-class IncidentPageContextMixin:
-    def get_profile(self):
-        profile = getattr(self.request.user, "profile", None)
-        if profile is None:
-            raise PermissionDenied("La cuenta no posee un perfil habilitado.")
-        return profile
-
-    def get_organization(self):
-        return self.get_profile().organization
-
+class IncidentPageContextMixin(OrganizationContextMixin):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        organization = self.get_organization()
         queryset = (
             Incident.objects
-            .filter(zone__department__organization=organization, deleted_at__isnull=True)
+            .filter(zone__department__organization=self.organization, deleted_at__isnull=True)
             .select_related("zone", "reported_by")
             .order_by("-created_at")
         )
@@ -107,7 +90,7 @@ class IncidentPageContextMixin:
         context["page_obj"] = page_obj
         context["paginator"] = paginator
         context["is_paginated"] = page_obj.has_other_pages()
-        context["organization"] = organization
+        context["organization"] = self.organization
         context["open_modal"] = True
         context["page_size"] = page_size
         return context
@@ -127,11 +110,16 @@ class IncidentCreateView(
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["organization"] = self.get_organization()
+        kwargs["organization"] = self.organization
+        kwargs["require_reported_by"] = getattr(self.request.user, "profile", None) is None
         return kwargs
 
     def form_valid(self, form):
-        form.instance.reported_by = self.get_profile()
+        profile = getattr(self.request.user, "profile", None)
+        if profile is not None:
+            form.instance.reported_by = profile
+        # Si no hay perfil (administrador central), reported_by ya viene
+        # elegido en el formulario — ver IncidentForm(require_reported_by=True).
         return super().form_valid(form)
 
 
@@ -149,17 +137,18 @@ class IncidentUpdateView(
 
     def get_queryset(self):
         return Incident.objects.filter(
-            zone__department__organization=self.get_organization(),
+            zone__department__organization=self.organization,
             deleted_at__isnull=True,
         )
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["organization"] = self.get_organization()
+        kwargs["organization"] = self.organization
+        kwargs["require_reported_by"] = getattr(self.request.user, "profile", None) is None
         return kwargs
 
 
-class IncidentDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class IncidentDeleteView(LoginRequiredMixin, PermissionRequiredMixin, OrganizationContextMixin, DeleteView):
     permission_required = "incidents.delete_incident"
     raise_exception = True
     model = Incident
@@ -170,11 +159,8 @@ class IncidentDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView
         return redirect("incidents:incident_list")
 
     def get_queryset(self):
-        profile = getattr(self.request.user, "profile", None)
-        if profile is None:
-            raise PermissionDenied("La cuenta no posee un perfil habilitado.")
         return Incident.objects.filter(
-            zone__department__organization=profile.organization,
+            zone__department__organization=self.organization,
             deleted_at__isnull=True,
         )
 
@@ -189,17 +175,19 @@ class IncidentDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView
 @login_required
 @permission_required("incidents.view_incident", raise_exception=True)
 def export_incidents_xlsx(request):
-    """Exporta las incidencias de la organización del usuario a un .xlsx real
-    (no un CSV disfrazado) — reutiliza el MISMO queryset scopeado y filtrado
-    por borrado lógico que IncidentListView, así la exportación nunca puede
-    mostrar más datos de los que el usuario vería en el listado."""
-    profile = getattr(request.user, "profile", None)
-    if profile is None:
-        raise PermissionDenied("La cuenta no posee un perfil habilitado.")
+    """Exporta las incidencias de la organización activa a un .xlsx real (no
+    un CSV disfrazado) — reutiliza el mismo criterio de organización/scoping
+    y borrado lógico que IncidentListView, así la exportación nunca puede
+    mostrar más datos de los que el usuario vería en el listado. Funciona
+    igual para un usuario de organización que para el administrador central
+    navegando una organización elegida."""
+    organization = get_effective_organization(request)
+    if organization is None:
+        return redirect("dashboard:organization_picker")
 
     incidencias = (
         Incident.objects
-        .filter(zone__department__organization=profile.organization, deleted_at__isnull=True)
+        .filter(zone__department__organization=organization, deleted_at__isnull=True)
         .select_related("zone", "reported_by")
         .order_by("-created_at")
     )
@@ -230,7 +218,7 @@ def export_incidents_xlsx(request):
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-    filename = f"incidencias_{profile.organization.commercial_name}_{timezone.localdate():%Y%m%d}.xlsx"
+    filename = f"incidencias_{organization.commercial_name}_{timezone.localdate():%Y%m%d}.xlsx"
     # Los headers HTTP no aceptan tildes/ñ directo (ej. "Organización") — hay
     # que mandar un nombre ASCII de respaldo + la versión real codificada
     # (RFC 5987) para que los navegadores modernos la muestren bien.

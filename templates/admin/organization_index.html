@@ -1,0 +1,28 @@
+{% extends "admin/index.html" %}
+
+{% block content %}
+<div class="module" style="margin-bottom: 20px;">
+    <table>
+        <caption>
+            <a href="#" class="section" title="Organizaciones">Organizaciones</a>
+        </caption>
+        <tbody>
+            {% for org in organizations %}
+            <tr>
+                <th scope="row">
+                    <a href="{% url 'admin:organization_hub' org.pk %}">{{ org.commercial_name }}</a>
+                </th>
+                <td>{{ org.legal_name }}</td>
+            </tr>
+            {% empty %}
+            <tr><th scope="row">No hay organizaciones activas todavía.</th></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p style="padding: 10px;">
+        <a href="{% url 'admin:organizations_organization_add' %}" class="addlink">Nueva organización</a>
+    </p>
+</div>
+
+{{ block.super }}
+{% endblock %}

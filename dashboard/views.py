@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
+from core.views import get_effective_organization
 from organizations.models import Department, Zone
 from incidents.models import Incident
 from devices.models import Device
@@ -10,9 +11,10 @@ def dashboard(request):
     profile = getattr(request.user, "profile", None)
 
     if profile is None:
-        # Administrador central de EcoEnergy (superusuario, sin perfil de
-        # organización): no tiene dashboard propio, su herramienta de trabajo
-        # es directamente /admin/ (multi-organización por diseño).
+        # Administrador central (superusuario, sin perfil de organización):
+        # su herramienta de trabajo es directamente /admin/, sin pasos
+        # intermedios — el selector de organizaciones vive adentro del
+        # propio Admin (ver core/admin_site.py), no acá.
         return redirect("admin:index")
 
     organization = profile.organization

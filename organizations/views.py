@@ -1,23 +1,10 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.core.exceptions import PermissionDenied
 from django.views.generic import ListView
+from core.views import OrganizationContextMixin
 from .models import Department, Zone
 
 
-class OrganizationScopedListMixin:
-    def get_organization(self):
-        profile = getattr(self.request.user, "profile", None)
-        if profile is None:
-            raise PermissionDenied("La cuenta no posee un perfil habilitado.")
-        return profile.organization
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["organization"] = self.get_organization()
-        return context
-
-
-class DepartmentListView(LoginRequiredMixin, PermissionRequiredMixin, OrganizationScopedListMixin, ListView):
+class DepartmentListView(LoginRequiredMixin, PermissionRequiredMixin, OrganizationContextMixin, ListView):
     permission_required = "organizations.view_department"
     raise_exception = True
     model = Department
@@ -27,13 +14,18 @@ class DepartmentListView(LoginRequiredMixin, PermissionRequiredMixin, Organizati
     def get_queryset(self):
         return (
             Department.objects
-            .filter(organization=self.get_organization(), deleted_at__isnull=True)
+            .filter(organization=self.organization, deleted_at__isnull=True)
             .select_related("head")
             .order_by("name")
         )
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["organization"] = self.organization
+        return context
 
-class ZoneListView(LoginRequiredMixin, PermissionRequiredMixin, OrganizationScopedListMixin, ListView):
+
+class ZoneListView(LoginRequiredMixin, PermissionRequiredMixin, OrganizationContextMixin, ListView):
     permission_required = "organizations.view_zone"
     raise_exception = True
     model = Zone
@@ -43,7 +35,12 @@ class ZoneListView(LoginRequiredMixin, PermissionRequiredMixin, OrganizationScop
     def get_queryset(self):
         return (
             Zone.objects
-            .filter(department__organization=self.get_organization(), deleted_at__isnull=True)
+            .filter(department__organization=self.organization, deleted_at__isnull=True)
             .select_related("department")
             .order_by("department__name", "name")
         )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["organization"] = self.organization
+        return context

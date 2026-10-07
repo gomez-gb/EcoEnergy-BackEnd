@@ -80,8 +80,8 @@ class Command(BaseCommand):
             content_type__app_label="organizations",
             codename__in=[
                 "view_organization", "change_organization",
-                "view_department", "add_department", "change_department", "delete_department",
-                "view_zone", "add_zone", "change_zone", "delete_zone",
+                "view_department", "add_department", "change_department",
+                "view_zone", "add_zone", "change_zone",
             ],
         ) | Permission.objects.filter(
             content_type__app_label="accounts",

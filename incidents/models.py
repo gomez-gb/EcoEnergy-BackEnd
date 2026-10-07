@@ -50,11 +50,15 @@ class Incident(BaseModel):
 
 
 class IncidentFollowUp(BaseModel):
-    incident = models.ForeignKey(Incident, on_delete=models.CASCADE, related_name="followups")
+    incident = models.ForeignKey(
+        Incident, on_delete=models.CASCADE, related_name="followups",
+        verbose_name="Incidencia",
+    )
     author = models.ForeignKey(
         "accounts.UserProfile", on_delete=models.PROTECT, related_name="authored_followups",
+        verbose_name="Autor",
     )
-    note = models.TextField()
+    note = models.TextField(verbose_name="Nota")
 
     class Meta:
         verbose_name = "Seguimiento de incidencia"

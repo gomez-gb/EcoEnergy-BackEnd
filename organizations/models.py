@@ -16,7 +16,10 @@ class Organization(BaseModel):
 
 class Department(BaseModel):
 
-    organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="departments")
+    organization = models.ForeignKey(
+        Organization, on_delete=models.PROTECT, related_name="departments",
+        verbose_name="Organización",
+    )
     head = models.ForeignKey(
         "accounts.UserProfile", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="departments_led", verbose_name="Jefatura",
@@ -38,7 +41,10 @@ class Department(BaseModel):
 
 class Zone(BaseModel):
 
-    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name='zones')
+    department = models.ForeignKey(
+        Department, on_delete=models.PROTECT, related_name='zones',
+        verbose_name="Departamento",
+    )
     name = models.CharField(max_length=150)
     zone_type = models.CharField(max_length=150)
     is_active = models.BooleanField(default=True)

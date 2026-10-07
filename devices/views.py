@@ -1,6 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
@@ -8,6 +7,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.http import HttpResponseRedirect
 from django.utils import timezone
 from django.contrib import messages
+from core.views import OrganizationContextMixin
 from .forms import DeviceForm
 from .models import Device
 
@@ -15,24 +15,17 @@ from .models import Device
 ALLOWED_PAGE_SIZES = {5, 15, 30}
 
 
-class DeviceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class DeviceListView(LoginRequiredMixin, PermissionRequiredMixin, OrganizationContextMixin, ListView):
     permission_required = "devices.view_device"
     raise_exception = True
     model = Device
     template_name = "devices/device_list.html"
     context_object_name = "devices"
 
-    def get_organization(self):
-        profile = getattr(self.request.user, "profile", None)
-        if profile is None:
-            raise PermissionDenied("La cuenta no posee un perfil habilitado.")
-        return profile.organization
-
     def get_queryset(self):
-        organization = self.get_organization()
         return (
             Device.objects
-            .filter(zone__department__organization=organization, deleted_at__isnull=True)
+            .filter(zone__department__organization=self.organization, deleted_at__isnull=True)
             .select_related("zone", "category")
             .order_by("name")
         )
@@ -68,27 +61,17 @@ class DeviceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["organization"] = self.get_organization()
+        context["organization"] = self.organization
         context["page_size"] = self.page_size
         return context
 
 
-class DevicePageContextMixin:
-    def get_profile(self):
-        profile = getattr(self.request.user, "profile", None)
-        if profile is None:
-            raise PermissionDenied("La cuenta no posee un perfil habilitado.")
-        return profile
-
-    def get_organization(self):
-        return self.get_profile().organization
-
+class DevicePageContextMixin(OrganizationContextMixin):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        organization = self.get_organization()
         queryset = (
             Device.objects
-            .filter(zone__department__organization=organization, deleted_at__isnull=True)
+            .filter(zone__department__organization=self.organization, deleted_at__isnull=True)
             .select_related("zone", "category")
             .order_by("name")
         )
@@ -100,7 +83,7 @@ class DevicePageContextMixin:
         context["page_obj"] = page_obj
         context["paginator"] = paginator
         context["is_paginated"] = page_obj.has_other_pages()
-        context["organization"] = organization
+        context["organization"] = self.organization
         context["open_modal"] = True
         context["page_size"] = page_size
         return context
@@ -120,7 +103,7 @@ class DeviceCreateView(
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["organization"] = self.get_organization()
+        kwargs["organization"] = self.organization
         return kwargs
 
 
@@ -138,17 +121,17 @@ class DeviceUpdateView(
 
     def get_queryset(self):
         return Device.objects.filter(
-            zone__department__organization=self.get_organization(),
+            zone__department__organization=self.organization,
             deleted_at__isnull=True,
         )
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["organization"] = self.get_organization()
+        kwargs["organization"] = self.organization
         return kwargs
 
 
-class DeviceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class DeviceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, OrganizationContextMixin, DeleteView):
     permission_required = "devices.delete_device"
     raise_exception = True
     model = Device
@@ -159,11 +142,8 @@ class DeviceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
         return redirect("devices:device_list")
 
     def get_queryset(self):
-        profile = getattr(self.request.user, "profile", None)
-        if profile is None:
-            raise PermissionDenied("La cuenta no posee un perfil habilitado.")
         return Device.objects.filter(
-            zone__department__organization=profile.organization,
+            zone__department__organization=self.organization,
             deleted_at__isnull=True,
         )
 
